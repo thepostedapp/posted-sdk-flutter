@@ -29,10 +29,7 @@ void main() {
                 },
               };
             case 'processLink':
-              return {
-                'processed': true,
-                'link': null,
-              };
+              return {'processed': true, 'link': null};
             default:
               return null;
           }
@@ -94,8 +91,6 @@ void main() {
 
     expect(calls, hasLength(1));
     expect(calls.first.method, 'logRetention');
-    expect(calls.first.arguments, {
-      'eventName': 'home_screen_viewed',
-    });
+    expect(calls.first.arguments, {'eventName': 'home_screen_viewed'});
   });
 }

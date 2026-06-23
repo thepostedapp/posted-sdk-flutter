@@ -15,15 +15,9 @@ void main() {
             case 'configure':
               return null;
             case 'resolveInitialLink':
-              return {
-                'processed': true,
-                'link': null,
-              };
+              return {'processed': true, 'link': null};
             case 'processLink':
-              return {
-                'processed': true,
-                'link': null,
-              };
+              return {'processed': true, 'link': null};
             case 'logEvent':
             case 'logRetention':
               return null;

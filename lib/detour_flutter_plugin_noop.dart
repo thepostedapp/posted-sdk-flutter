@@ -8,7 +8,9 @@ import 'detour_flutter_plugin_platform_interface.dart';
 class NoopDetourFlutterPlugin extends DetourFlutterPluginPlatform {
   @override
   Future<void> configure(DetourConfig config) async {
-    debugPrint('Detour: current platform is not supported, skipping initialization');
+    debugPrint(
+      'Detour: current platform is not supported, skipping initialization',
+    );
   }
 
   @override

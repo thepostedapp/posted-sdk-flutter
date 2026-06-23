@@ -17,10 +17,7 @@ void main() {
             case 'configure':
               return null;
             case 'resolveInitialLink':
-              return {
-                'processed': true,
-                'link': null,
-              };
+              return {'processed': true, 'link': null};
             default:
               return null;
           }
@@ -32,10 +29,7 @@ void main() {
 
     final plugin = DetourFlutterPlugin();
     await plugin.configure(
-      const DetourConfig(
-        apiKey: 'api-key',
-        appID: 'app-id',
-      ),
+      const DetourConfig(apiKey: 'api-key', appID: 'app-id'),
     );
 
     final result = await plugin.resolveInitialLink();
