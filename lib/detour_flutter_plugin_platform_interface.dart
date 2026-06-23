@@ -10,10 +10,9 @@ abstract class DetourFlutterPluginPlatform extends PlatformInterface {
 
   static final Object _token = Object();
 
-  static DetourFlutterPluginPlatform _instance =
-      isSupportedPlatform
-          ? MethodChannelDetourFlutterPlugin()
-          : NoopDetourFlutterPlugin();
+  static DetourFlutterPluginPlatform _instance = isSupportedPlatform
+      ? MethodChannelDetourFlutterPlugin()
+      : NoopDetourFlutterPlugin();
 
   static DetourFlutterPluginPlatform get instance => _instance;
 
