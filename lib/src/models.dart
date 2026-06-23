@@ -1,23 +1,23 @@
-enum LinkType { deferred, verified, scheme }
+enum PostedLinkType { deferred, verified, scheme }
 
-enum LinkProcessingMode {
+enum PostedLinkProcessingMode {
   all,
   webOnly,
   deferredOnly;
 
   String get value {
     switch (this) {
-      case LinkProcessingMode.all:
+      case PostedLinkProcessingMode.all:
         return 'all';
-      case LinkProcessingMode.webOnly:
+      case PostedLinkProcessingMode.webOnly:
         return 'web-only';
-      case LinkProcessingMode.deferredOnly:
+      case PostedLinkProcessingMode.deferredOnly:
         return 'deferred-only';
     }
   }
 }
 
-enum DetourEventName {
+enum PostedEventName {
   login,
   search,
   share,
@@ -39,68 +39,68 @@ enum DetourEventName {
 
   String get rawValue {
     switch (this) {
-      case DetourEventName.login:
+      case PostedEventName.login:
         return 'login';
-      case DetourEventName.search:
+      case PostedEventName.search:
         return 'search';
-      case DetourEventName.share:
+      case PostedEventName.share:
         return 'share';
-      case DetourEventName.signUp:
+      case PostedEventName.signUp:
         return 'sign_up';
-      case DetourEventName.tutorialBegin:
+      case PostedEventName.tutorialBegin:
         return 'tutorial_begin';
-      case DetourEventName.tutorialComplete:
+      case PostedEventName.tutorialComplete:
         return 'tutorial_complete';
-      case DetourEventName.reEngage:
+      case PostedEventName.reEngage:
         return 're_engage';
-      case DetourEventName.invite:
+      case PostedEventName.invite:
         return 'invite';
-      case DetourEventName.openedFromPushNotification:
+      case PostedEventName.openedFromPushNotification:
         return 'opened_from_push_notification';
-      case DetourEventName.addPaymentInfo:
+      case PostedEventName.addPaymentInfo:
         return 'add_payment_info';
-      case DetourEventName.addShippingInfo:
+      case PostedEventName.addShippingInfo:
         return 'add_shipping_info';
-      case DetourEventName.addToCart:
+      case PostedEventName.addToCart:
         return 'add_to_cart';
-      case DetourEventName.removeFromCart:
+      case PostedEventName.removeFromCart:
         return 'remove_from_cart';
-      case DetourEventName.refund:
+      case PostedEventName.refund:
         return 'refund';
-      case DetourEventName.viewItem:
+      case PostedEventName.viewItem:
         return 'view_item';
-      case DetourEventName.beginCheckout:
+      case PostedEventName.beginCheckout:
         return 'begin_checkout';
-      case DetourEventName.purchase:
+      case PostedEventName.purchase:
         return 'purchase';
-      case DetourEventName.adImpression:
+      case PostedEventName.adImpression:
         return 'ad_impression';
     }
   }
 }
 
-class DetourConfig {
+class PostedConfig {
   final String apiKey;
   final String appID;
   final bool shouldUseClipboard;
-  final LinkProcessingMode linkProcessingMode;
+  final PostedLinkProcessingMode linkProcessingMode;
 
-  const DetourConfig({
+  const PostedConfig({
     required this.apiKey,
     required this.appID,
     this.shouldUseClipboard = true,
-    this.linkProcessingMode = LinkProcessingMode.all,
+    this.linkProcessingMode = PostedLinkProcessingMode.all,
   });
 }
 
-class DetourLink {
+class PostedLink {
   final String url;
   final String route;
   final String pathname;
   final Map<String, String> params;
-  final LinkType type;
+  final PostedLinkType type;
 
-  const DetourLink({
+  const PostedLink({
     required this.url,
     required this.route,
     required this.pathname,
@@ -108,24 +108,24 @@ class DetourLink {
     required this.type,
   });
 
-  factory DetourLink.fromMap(Map<dynamic, dynamic> map) {
+  factory PostedLink.fromMap(Map<dynamic, dynamic> map) {
     final typeStr = map['type'] as String? ?? 'verified';
-    final LinkType type;
+    final PostedLinkType type;
     switch (typeStr) {
       case 'deferred':
-        type = LinkType.deferred;
+        type = PostedLinkType.deferred;
         break;
       case 'scheme':
-        type = LinkType.scheme;
+        type = PostedLinkType.scheme;
         break;
       default:
-        type = LinkType.verified;
+        type = PostedLinkType.verified;
     }
     final paramsRaw = map['params'] as Map? ?? {};
     final params = paramsRaw.map(
       (k, v) => MapEntry(k.toString(), v.toString()),
     );
-    return DetourLink(
+    return PostedLink(
       url: map['url'] as String? ?? '',
       route: map['route'] as String? ?? '',
       pathname: map['pathname'] as String? ?? '',
@@ -135,17 +135,17 @@ class DetourLink {
   }
 }
 
-class DetourResult {
+class PostedResult {
   final bool processed;
-  final DetourLink? link;
+  final PostedLink? link;
 
-  const DetourResult({required this.processed, this.link});
+  const PostedResult({required this.processed, this.link});
 
-  factory DetourResult.fromMap(Map<dynamic, dynamic> map) {
+  factory PostedResult.fromMap(Map<dynamic, dynamic> map) {
     final linkMap = map['link'] as Map?;
-    return DetourResult(
+    return PostedResult(
       processed: map['processed'] as bool? ?? false,
-      link: linkMap != null ? DetourLink.fromMap(linkMap) : null,
+      link: linkMap != null ? PostedLink.fromMap(linkMap) : null,
     );
   }
 }

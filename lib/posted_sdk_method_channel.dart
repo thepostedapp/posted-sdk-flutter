@@ -1,24 +1,24 @@
 import 'package:flutter/services.dart';
 
-import 'detour_flutter_plugin_platform_interface.dart';
+import 'posted_sdk_platform_interface.dart';
 import 'src/models.dart';
 
-class MethodChannelDetourFlutterPlugin extends DetourFlutterPluginPlatform {
-  final methodChannel = const MethodChannel('detour_flutter_plugin');
-  final _eventChannel = const EventChannel('detour_flutter_plugin/links');
+class MethodChannelPostedSdk extends PostedSdkPlatform {
+  final methodChannel = const MethodChannel('posted_sdk');
+  final _eventChannel = const EventChannel('posted_sdk/links');
 
-  Stream<DetourResult>? _linkStream;
+  Stream<PostedResult>? _linkStream;
 
   @override
-  Stream<DetourResult> get linkStream {
+  Stream<PostedResult> get linkStream {
     _linkStream ??= _eventChannel.receiveBroadcastStream().map(
-      (event) => DetourResult.fromMap(event as Map),
+      (event) => PostedResult.fromMap(event as Map),
     );
     return _linkStream!;
   }
 
   @override
-  Future<void> configure(DetourConfig config) async {
+  Future<void> configure(PostedConfig config) async {
     await methodChannel.invokeMethod<void>('configure', {
       'apiKey': config.apiKey,
       'appID': config.appID,
@@ -28,25 +28,25 @@ class MethodChannelDetourFlutterPlugin extends DetourFlutterPluginPlatform {
   }
 
   @override
-  Future<DetourResult> resolveInitialLink() async {
+  Future<PostedResult> resolveInitialLink() async {
     final result = await methodChannel.invokeMapMethod<String, dynamic>(
       'resolveInitialLink',
     );
-    return DetourResult.fromMap(result ?? {});
+    return PostedResult.fromMap(result ?? {});
   }
 
   @override
-  Future<DetourResult> processLink(String url) async {
+  Future<PostedResult> processLink(String url) async {
     final result = await methodChannel.invokeMapMethod<String, dynamic>(
       'processLink',
       {'url': url},
     );
-    return DetourResult.fromMap(result ?? {});
+    return PostedResult.fromMap(result ?? {});
   }
 
   @override
   Future<void> logEvent(
-    DetourEventName eventName, {
+    PostedEventName eventName, {
     Map<String, dynamic>? data,
   }) async {
     await methodChannel.invokeMethod<void>('logEvent', {

@@ -1,7 +1,7 @@
-name: detour_flutter_plugin
-description: "Flutter bridge SDK for Detour deferred deep links and analytics."
-version: 1.2.0
-homepage: https://docs.swmansion.com/detour/docs/sdk/flutter/sdk-installation
+name: posted_sdk
+description: "Flutter bridge SDK for posted-sdk deferred deep links and analytics."
+version: 2.0.0
+homepage: https://postedapp.com
 repository: https://github.com/software-mansion-labs/detour-flutter-plugin
 
 environment:
@@ -36,10 +36,10 @@ flutter:
   plugin:
     platforms:
       android:
-        package: com.swmansion.detour
-        pluginClass: DetourFlutterPlugin
+        package: com.postedapp.posted
+        pluginClass: PostedFlutterPlugin
       ios:
-        pluginClass: DetourFlutterPlugin
+        pluginClass: PostedFlutterPlugin
 
   # To add assets to your plugin package, add an assets section, like this:
   # assets:
