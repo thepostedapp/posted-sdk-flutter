@@ -18,8 +18,7 @@ class MockDetourFlutterPluginPlatform
   }
 
   @override
-  Stream<DetourResult> get linkStream =>
-      const Stream<DetourResult>.empty();
+  Stream<DetourResult> get linkStream => const Stream<DetourResult>.empty();
 
   @override
   Future<void> logEvent(

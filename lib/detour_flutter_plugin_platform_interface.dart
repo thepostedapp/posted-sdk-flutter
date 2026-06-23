@@ -11,7 +11,9 @@ abstract class DetourFlutterPluginPlatform extends PlatformInterface {
   static final Object _token = Object();
 
   static DetourFlutterPluginPlatform _instance =
-      isSupportedPlatform ? MethodChannelDetourFlutterPlugin() : NoopDetourFlutterPlugin();
+      isSupportedPlatform
+          ? MethodChannelDetourFlutterPlugin()
+          : NoopDetourFlutterPlugin();
 
   static DetourFlutterPluginPlatform get instance => _instance;
 
@@ -36,7 +38,10 @@ abstract class DetourFlutterPluginPlatform extends PlatformInterface {
     throw UnimplementedError('linkStream has not been implemented.');
   }
 
-  Future<void> logEvent(DetourEventName eventName, {Map<String, dynamic>? data}) {
+  Future<void> logEvent(
+    DetourEventName eventName, {
+    Map<String, dynamic>? data,
+  }) {
     throw UnimplementedError('logEvent() has not been implemented.');
   }
 

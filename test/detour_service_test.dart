@@ -7,10 +7,7 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 class FakeDetourPlatform extends DetourFlutterPluginPlatform
     with MockPlatformInterfaceMixin {
-  FakeDetourPlatform({
-    required this.initialResult,
-    required this.manualResult,
-  });
+  FakeDetourPlatform({required this.initialResult, required this.manualResult});
 
   final StreamController<DetourResult> _runtimeController =
       StreamController<DetourResult>.broadcast();
@@ -102,46 +99,49 @@ void main() {
     service.dispose();
   });
 
-  test('suppresses short-window duplicates between initial and runtime', () async {
-    final link = _resultFor('/details?id=1', LinkType.verified);
-    final platform = FakeDetourPlatform(
-      initialResult: link,
-      manualResult: const DetourResult(processed: true, link: null),
-    );
+  test(
+    'suppresses short-window duplicates between initial and runtime',
+    () async {
+      final link = _resultFor('/details?id=1', LinkType.verified);
+      final platform = FakeDetourPlatform(
+        initialResult: link,
+        manualResult: const DetourResult(processed: true, link: null),
+      );
 
-    final service = DetourService(
-      platform: platform,
-      duplicateSuppressionWindow: const Duration(milliseconds: 120),
-    );
+      final service = DetourService(
+        platform: platform,
+        duplicateSuppressionWindow: const Duration(milliseconds: 120),
+      );
 
-    await service.start(_config);
-    service.consumePendingIntent();
+      await service.start(_config);
+      service.consumePendingIntent();
 
-    platform.emitRuntime(link);
-    await Future<void>.delayed(const Duration(milliseconds: 10));
+      platform.emitRuntime(link);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
-    expect(service.pendingIntent, isNull);
+      expect(service.pendingIntent, isNull);
 
-    platform.emitRuntime(_resultFor('/details?id=2', LinkType.verified));
-    await Future<void>.delayed(const Duration(milliseconds: 10));
+      platform.emitRuntime(_resultFor('/details?id=2', LinkType.verified));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
-    expect(service.pendingIntent, isNotNull);
-    expect(service.pendingIntent?.source, DetourIntentSource.runtime);
-    expect(service.pendingIntent?.link.route, '/details?id=2');
+      expect(service.pendingIntent, isNotNull);
+      expect(service.pendingIntent?.source, DetourIntentSource.runtime);
+      expect(service.pendingIntent?.link.route, '/details?id=2');
 
-    service.consumePendingIntent();
-    await Future<void>.delayed(const Duration(milliseconds: 130));
+      service.consumePendingIntent();
+      await Future<void>.delayed(const Duration(milliseconds: 130));
 
-    platform.emitRuntime(link);
-    await Future<void>.delayed(const Duration(milliseconds: 10));
+      platform.emitRuntime(link);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
-    expect(service.pendingIntent, isNotNull);
-    expect(service.pendingIntent?.link.route, '/details?id=1');
+      expect(service.pendingIntent, isNotNull);
+      expect(service.pendingIntent?.link.route, '/details?id=1');
 
-    await service.stop();
-    await platform.close();
-    service.dispose();
-  });
+      await service.stop();
+      await platform.close();
+      service.dispose();
+    },
+  );
 
   test('processLink can emit manual intent optionally', () async {
     final manual = _resultFor('/manual', LinkType.scheme);

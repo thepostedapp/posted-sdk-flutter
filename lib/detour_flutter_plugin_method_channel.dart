@@ -11,9 +11,9 @@ class MethodChannelDetourFlutterPlugin extends DetourFlutterPluginPlatform {
 
   @override
   Stream<DetourResult> get linkStream {
-    _linkStream ??= _eventChannel
-        .receiveBroadcastStream()
-        .map((event) => DetourResult.fromMap(event as Map));
+    _linkStream ??= _eventChannel.receiveBroadcastStream().map(
+      (event) => DetourResult.fromMap(event as Map),
+    );
     return _linkStream!;
   }
 
