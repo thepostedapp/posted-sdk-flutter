@@ -10,7 +10,6 @@ jobs:
       - uses: subosito/flutter-action@v2
         with: { channel: stable }
       - run: flutter pub get
-      - run: touch example/.env   # asset referenced in pubspec.yaml; gitignored on dev, needs placeholder in CI
       - run: flutter analyze
       - run: dart format --output=none --set-exit-if-changed .
   build:
