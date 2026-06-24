@@ -20,13 +20,13 @@ void main() {
 
     test('iOS marker sdkHeaderValue is flutter/<pubspec-version>', () {
       final marker = File(
-        'ios/Classes/DetourFlutterMarker.swift',
+        'ios/Classes/PostedFlutterMarker.swift',
       ).readAsStringSync();
       expect(
         marker,
         contains('sdkHeaderValue = "flutter/$pubspecVersion"'),
         reason:
-            'iOS DetourFlutterMarker must emit flutter/$pubspecVersion as the X-SDK header value',
+            'iOS PostedFlutterMarker must emit flutter/$pubspecVersion as the X-SDK header value',
       );
     });
 
@@ -54,14 +54,14 @@ void main() {
 
     test('vendored contract fixture lists flutter/1.2.0 as the X-SDK example', () {
       final contract = File(
-        'test/fixtures/detour-backend-contract.yaml',
+        'test/fixtures/posted-backend-contract.yaml',
       ).readAsStringSync();
       expect(
         contract,
         contains('flutter/1.2.0'),
         reason:
             'Vendored contract fixture must include flutter/1.2.0 as an X-SDK header example — '
-            're-vendor test/fixtures/detour-backend-contract.yaml if the contract has changed',
+            're-vendor test/fixtures/posted-backend-contract.yaml if the contract has changed',
       );
     });
   });

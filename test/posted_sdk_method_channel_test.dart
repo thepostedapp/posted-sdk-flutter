@@ -109,7 +109,7 @@ void main() {
   });
 
   test('logEvent with null data passes null in data field', () async {
-    await platform.logEvent(DetourEventName.login);
+    await platform.logEvent(PostedEventName.login);
 
     expect(calls, hasLength(1));
     expect(calls.first.method, 'logEvent');
