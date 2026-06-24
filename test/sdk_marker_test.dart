@@ -12,8 +12,9 @@ void main() {
         r'^version:\s+(\S+)',
         multiLine: true,
       ).firstMatch(pubspec);
-      if (match == null)
+      if (match == null) {
         throw StateError('Failed to parse version from pubspec.yaml');
+      }
       pubspecVersion = match.group(1)!;
     });
 
