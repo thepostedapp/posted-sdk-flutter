@@ -1,15 +1,15 @@
 #
 # To learn more about a Podspec see http://guides.cocoapods.org/syntax/podspec.html.
-# Run `pod lib lint detour_flutter_plugin.podspec` to validate before publishing.
+# Run `pod lib lint posted_sdk.podspec` to validate before publishing.
 #
 Pod::Spec.new do |s|
-  s.name             = 'detour_flutter_plugin'
-  s.version          = '1.2.0'
-  s.summary          = 'Flutter bridge for Detour native SDKs.'
+  s.name             = 'posted_sdk'
+  s.version          = '2.0.0'
+  s.summary          = 'Flutter bridge for the posted native SDKs.'
   s.description      = <<-DESC
-Flutter bridge plugin for Detour deferred deep links and analytics.
+Flutter bridge plugin for posted-sdk deferred deep links and analytics.
                        DESC
-  s.homepage         = 'https://godetour.dev'
+  s.homepage         = 'https://postedapp.com'
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Software Mansion' => 'contact@godetour.com' }
   s.source           = { :path => '.' }
@@ -26,5 +26,5 @@ Flutter bridge plugin for Detour deferred deep links and analytics.
   # required reason APIs, update the PrivacyInfo.xcprivacy file to describe your
   # plugin's privacy impact, and then uncomment this line. For more information,
   # see https://developer.apple.com/documentation/bundleresources/privacy_manifest_files
-  # s.resource_bundles = {'detour_flutter_plugin_privacy' => ['Resources/PrivacyInfo.xcprivacy']}
+  # s.resource_bundles = {'posted_sdk_privacy' => ['Resources/PrivacyInfo.xcprivacy']}
 end

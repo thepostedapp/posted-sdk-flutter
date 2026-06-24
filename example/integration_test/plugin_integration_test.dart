@@ -1,4 +1,4 @@
-import 'package:detour_flutter_plugin/detour_flutter_plugin.dart';
+import 'package:posted_sdk/posted_sdk.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -6,7 +6,7 @@ import 'package:integration_test/integration_test.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  const channel = MethodChannel('detour_flutter_plugin');
+  const channel = MethodChannel('posted_sdk');
 
   testWidgets('configure + resolveInitialLink bridge contract', (
     WidgetTester _,
@@ -27,9 +27,9 @@ void main() {
           .setMockMethodCallHandler(channel, null);
     });
 
-    final plugin = DetourFlutterPlugin();
+    final plugin = PostedSdk();
     await plugin.configure(
-      const DetourConfig(apiKey: 'api-key', appID: 'app-id'),
+      const PostedConfig(apiKey: 'api-key', appID: 'app-id'),
     );
 
     final result = await plugin.resolveInitialLink();

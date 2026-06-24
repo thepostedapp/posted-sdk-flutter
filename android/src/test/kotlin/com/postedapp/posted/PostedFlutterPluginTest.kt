@@ -1,14 +1,14 @@
-package com.swmansion.detour
+package com.postedapp.posted
 
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import org.mockito.Mockito
 import kotlin.test.Test
 
-internal class DetourFlutterPluginTest {
+internal class PostedFlutterPluginTest {
     @Test
     fun onMethodCall_unknownMethod_returnsNotImplemented() {
-        val plugin = DetourFlutterPlugin()
+        val plugin = PostedFlutterPlugin()
         val call = MethodCall("unknownMethod", null)
         val mockResult: MethodChannel.Result = Mockito.mock(MethodChannel.Result::class.java)
         plugin.onMethodCall(call, mockResult)

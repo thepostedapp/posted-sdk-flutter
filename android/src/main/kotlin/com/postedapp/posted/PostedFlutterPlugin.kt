@@ -1,4 +1,4 @@
-package com.swmansion.detour
+package com.postedapp.posted
 
 import android.app.Activity
 import android.content.Intent
@@ -16,12 +16,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import com.swmansion.detour.Detour
+import com.swmansion.detour.DetourConfig
 import com.swmansion.detour.analytics.DetourAnalytics
 import com.swmansion.detour.analytics.DetourEventNames
 import com.swmansion.detour.models.LinkProcessingMode
 import com.swmansion.detour.models.LinkResult
 
-class DetourFlutterPlugin :
+class PostedFlutterPlugin :
     FlutterPlugin,
     MethodCallHandler,
     ActivityAware,
@@ -40,10 +42,10 @@ class DetourFlutterPlugin :
     private val scope = CoroutineScope(Dispatchers.Main.immediate + SupervisorJob())
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        methodChannel = MethodChannel(binding.binaryMessenger, "detour_flutter_plugin")
+        methodChannel = MethodChannel(binding.binaryMessenger, "posted_sdk")
         methodChannel.setMethodCallHandler(this)
 
-        eventChannel = EventChannel(binding.binaryMessenger, "detour_flutter_plugin/links")
+        eventChannel = EventChannel(binding.binaryMessenger, "posted_sdk/links")
         eventChannel.setStreamHandler(this)
     }
 

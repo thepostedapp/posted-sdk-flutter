@@ -1,22 +1,6 @@
-<img src="https://github.com/user-attachments/assets/c965b51b-7307-477a-8d22-9c9cd6da6231" alt="Detour Flutter Plugin by Software Mansion" width="100%"/>
+# posted_sdk
 
-[![Ad](https://revive-adserver.swmansion.com/www/images/zone-gh-flutter-detour-1?n=1)](https://revive-adserver.swmansion.com/www/delivery/ck.php?zoneid=zone-gh-flutter-detour-1&n=1)
-[![Ad](https://revive-adserver.swmansion.com/www/images/zone-gh-flutter-detour-2?n=1)](https://revive-adserver.swmansion.com/www/delivery/ck.php?zoneid=zone-gh-flutter-detour-2&n=1)
-[![Ad](https://revive-adserver.swmansion.com/www/images/zone-gh-flutter-detour-3?n=1)](https://revive-adserver.swmansion.com/www/delivery/ck.php?zoneid=zone-gh-flutter-detour-3&n=1)
-
-# Detour Flutter Plugin
-
-Detour Flutter Plugin wraps the native Detour SDKs for Android and iOS, giving Flutter apps access to deferred deep linking. A deferred link works like a regular deep link, but survives the Play Store or App Store install — a user who clicks a link before having the app installed is redirected to the right screen on first launch. The plugin also handles Universal/App Links and custom scheme links in a single unified API.
-
-## Quick links
-
-- Documentation: [https://detour.swmansion.com/docs/](https://detour.swmansion.com/docs/)
-- Installation guide: [https://detour.swmansion.com/docs/sdk/flutter/sdk-installation](https://detour.swmansion.com/docs/sdk/flutter/sdk-installation)
-
-## Create an account
-
-You need a Detour account to generate app credentials and configure your links.  
-Sign up here: [https://godetour.dev/auth/signup](https://godetour.dev/auth/signup)
+Flutter plugin for mobile attribution and deferred deep linking. `posted_sdk` wraps the native Detour SDKs for Android and iOS, giving Flutter apps access to deferred deep links that survive the Play Store or App Store install flow, along with Universal/App Links and custom scheme links in a single unified API.
 
 ## Installation
 
@@ -26,7 +10,7 @@ Add the package to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  detour_flutter_plugin: ^1.2.0
+  posted_sdk: ^2.0.0
 ```
 
 Then run `flutter pub get`.
@@ -59,73 +43,75 @@ cd ios && pod install && cd ..
 
 ## Usage
 
-### Recommended: `DetourService`
+### Recommended: `PostedService`
 
-`DetourService` is the recommended integration layer. It extends `ChangeNotifier` and merges initial and runtime link handling into a single pending intent with explicit consume semantics.
+`PostedService` is the recommended integration layer. It extends `ChangeNotifier` and merges initial and runtime link handling into a single pending intent with explicit consume semantics.
 
 <details>
-<summary>DetourService example</summary>
+<summary>PostedService example</summary>
 
 ```dart
-import 'package:detour_flutter_plugin/detour_flutter_plugin.dart';
+import 'package:posted_sdk/posted_sdk.dart';
 
-final detour = DetourService();
+final posted = PostedService();
 
 @override
 void initState() {
   super.initState();
-  detour.addListener(_onDetourChanged);
-  _startDetour();
+  posted.addListener(_onPostedChanged);
+  _startPosted();
 }
 
-Future<void> _startDetour() async {
-  await detour.start(
-    const DetourConfig(
+Future<void> _startPosted() async {
+  await posted.start(
+    const PostedConfig(
       apiKey: '<REPLACE_WITH_YOUR_API_KEY>',
       appID: '<REPLACE_WITH_APP_ID_FROM_PLATFORM>',
     ),
   );
 }
 
-void _onDetourChanged() {
-  final intent = detour.pendingIntent;
+void _onPostedChanged() {
+  final intent = posted.pendingIntent;
   if (intent == null) return;
 
   // Navigate once, then mark as consumed.
   // context.go(intent.link.route);
-  detour.consumePendingIntent();
+  posted.consumePendingIntent();
 }
 
 @override
 void dispose() {
-  detour.removeListener(_onDetourChanged);
-  detour.dispose();
+  posted.removeListener(_onPostedChanged);
+  posted.dispose();
   super.dispose();
 }
 ```
 
 </details>
 
-### Low-level API: `DetourFlutterPlugin`
+### Low-level API: `PostedSdk`
 
-For full manual control, use `DetourFlutterPlugin` directly:
+For full manual control, use `PostedSdk` directly:
 
 <details>
-<summary>DetourFlutterPlugin example</summary>
+<summary>PostedSdk example</summary>
 
 ```dart
-final plugin = DetourFlutterPlugin();
+import 'package:posted_sdk/posted_sdk.dart';
 
-await plugin.configure(
-  const DetourConfig(
+final sdk = PostedSdk();
+
+await sdk.configure(
+  const PostedConfig(
     apiKey: '<REPLACE_WITH_YOUR_API_KEY>',
     appID: '<REPLACE_WITH_APP_ID_FROM_PLATFORM>',
   ),
 );
 
-final initial = await plugin.resolveInitialLink();
-final stream = plugin.linkStream;
-final processed = await plugin.processLink('https://example.com/path');
+final initial = await sdk.resolveInitialLink();
+final stream = sdk.linkStream;
+final processed = await sdk.processLink('https://example.com/path');
 ```
 
 </details>
@@ -134,15 +120,15 @@ final processed = await plugin.processLink('https://example.com/path');
 
 Use `linkProcessingMode` to control which link sources the SDK handles:
 
-| Value                          | Universal/App links | Deferred links | Custom scheme links |
-| ------------------------------ | ------------------- | -------------- | ------------------- |
-| `LinkProcessingMode.all` (default) | ✅             | ✅             | ✅                  |
-| `LinkProcessingMode.webOnly`   | ✅                  | ✅             | ❌                  |
-| `LinkProcessingMode.deferredOnly` | ❌               | ✅             | ❌                  |
+| Value                                    | Universal/App links | Deferred links | Custom scheme links |
+| ---------------------------------------- | ------------------- | -------------- | ------------------- |
+| `PostedLinkProcessingMode.all` (default) | ✅                  | ✅             | ✅                  |
+| `PostedLinkProcessingMode.webOnly`       | ✅                  | ✅             | ❌                  |
+| `PostedLinkProcessingMode.deferredOnly`  | ❌                  | ✅             | ❌                  |
 
 ### Custom scheme runtime links
 
-Custom scheme links require `linkProcessingMode: LinkProcessingMode.all` and native registration on each platform.
+Custom scheme links require `linkProcessingMode: PostedLinkProcessingMode.all` and native registration on each platform.
 
 <details>
 <summary>Native registration</summary>
@@ -192,91 +178,89 @@ xcrun simctl openurl booted "myapp://products/42?source=scheme"
 <summary>Analytics example</summary>
 
 ```dart
-await detour.logEvent(
-  DetourEventName.purchase,
+await posted.logEvent(
+  PostedEventName.purchase,
   data: {'value': 9.99, 'currency': 'USD'},
 );
 
-await detour.logRetention('week_1');
+await posted.logRetention('week_1');
 ```
 
 </details>
-
-See the [analytics docs](https://detour.swmansion.com/docs/) for the full event list and retention tracking setup.
 
 ## Types
 
-### `DetourConfig`
+### `PostedConfig`
 
 <details>
-<summary>DetourConfig</summary>
+<summary>PostedConfig</summary>
 
 ```dart
-class DetourConfig {
+class PostedConfig {
   final String apiKey;
   final String appID;
-  final bool shouldUseClipboard;        // default: true
-  final LinkProcessingMode linkProcessingMode;  // default: LinkProcessingMode.all
+  final bool shouldUseClipboard;                   // default: true
+  final PostedLinkProcessingMode linkProcessingMode; // default: PostedLinkProcessingMode.all
 }
 ```
 
 </details>
 
-### `DetourIntent`
+### `PostedIntent`
 
 <details>
-<summary>DetourIntent</summary>
+<summary>PostedIntent</summary>
 
 ```dart
-class DetourIntent {
-  final DetourLink link;
-  final DetourIntentSource source;  // initial, runtime, or manual
+class PostedIntent {
+  final PostedLink link;
+  final PostedIntentSource source;  // initial, runtime, or manual
   final DateTime receivedAt;
 }
 
-enum DetourIntentSource { initial, runtime, manual }
+enum PostedIntentSource { initial, runtime, manual }
 ```
 
 </details>
 
-### `DetourResult`
+### `PostedResult`
 
 <details>
-<summary>DetourResult</summary>
+<summary>PostedResult</summary>
 
 ```dart
-class DetourResult {
+class PostedResult {
   final bool processed;
-  final DetourLink? link;
+  final PostedLink? link;
 }
 ```
 
 </details>
 
-### `DetourLink`
+### `PostedLink`
 
 <details>
-<summary>DetourLink</summary>
+<summary>PostedLink</summary>
 
 ```dart
-class DetourLink {
+class PostedLink {
   final String url;
   final String route;
   final String pathname;
   final Map<String, String> params;
-  final LinkType type;  // deferred, verified, or scheme
+  final PostedLinkType type;  // deferred, verified, or scheme
 }
 ```
 
 </details>
 
-### `DetourEventName`
+### `PostedEventName`
 
 <details>
-<summary>DetourEventName</summary>
+<summary>PostedEventName</summary>
 
 ```dart
-enum DetourEventName {
+enum PostedEventName {
   login, search, share, signUp, tutorialBegin, tutorialComplete,
   reEngage, invite, openedFromPushNotification, addPaymentInfo,
   addShippingInfo, addToCart, removeFromCart, refund, viewItem,
@@ -288,51 +272,54 @@ enum DetourEventName {
 
 ## API Reference
 
-### `DetourService`
+### `PostedService`
 
 High-level integration helper (extends `ChangeNotifier`):
 
-- `Future<void> start(DetourConfig config)`
+- `Future<void> start(PostedConfig config)`
 - `bool get isStarted`
 - `bool get isInitialLinkProcessed`
-- `DetourIntent? get pendingIntent`
+- `PostedIntent? get pendingIntent`
 - `void consumePendingIntent()`
-- `Future<DetourResult> processLink(String url, {bool emitIntent = true})`
-- `Future<void> logEvent(DetourEventName eventName, {Map<String, dynamic>? data})`
+- `Future<PostedResult> processLink(String url, {bool emitIntent = true})`
+- `Future<void> logEvent(PostedEventName eventName, {Map<String, dynamic>? data})`
 - `Future<void> logRetention(String eventName)`
 - `Future<void> stop()`
 
-### `DetourFlutterPlugin`
+### `PostedSdk`
 
 Low-level bridge API:
 
-- `Future<void> configure(DetourConfig config)`
-- `Future<DetourResult> resolveInitialLink()`
-- `Stream<DetourResult> get linkStream`
-- `Future<DetourResult> processLink(String url)`
-- `Future<void> logEvent(DetourEventName eventName, {Map<String, dynamic>? data})`
+- `Future<void> configure(PostedConfig config)`
+- `Future<PostedResult> resolveInitialLink()`
+- `Stream<PostedResult> get linkStream`
+- `Future<PostedResult> processLink(String url)`
+- `Future<void> logEvent(PostedEventName eventName, {Map<String, dynamic>? data})`
 - `Future<void> logRetention(String eventName)`
 
 ## Example
 
 A complete integration example covering deferred links, Universal/App Links, and custom scheme links is in [`example/`](./example). See the [example setup guide](./example/README.md) for step-by-step instructions.
 
-## Other Detour SDKs
+## Migration from `detour_flutter_plugin`
 
-Detour is also available for other app stacks:
+`detour_flutter_plugin` v1.x has been superseded by `posted_sdk` v2.0.0. All `Detour*` names have `Posted*` equivalents available as deprecated typedef shims until v3.0 — existing code will compile with a deprecation warning without changes:
 
-- Android SDK: [https://github.com/software-mansion-labs/android-detour](https://github.com/software-mansion-labs/android-detour)
-- iOS SDK: [https://github.com/software-mansion-labs/ios-detour](https://github.com/software-mansion-labs/ios-detour)
-- React Native SDK: [https://github.com/software-mansion-labs/react-native-detour](https://github.com/software-mansion-labs/react-native-detour)
+| v1 (deprecated) | v2 |
+| --- | --- |
+| `DetourService` | `PostedService` |
+| `DetourFlutterPlugin` | `PostedSdk` |
+| `DetourConfig` | `PostedConfig` |
+| `DetourResult` | `PostedResult` |
+| `DetourLink` | `PostedLink` |
+| `DetourIntent` | `PostedIntent` |
+| `DetourIntentSource` | `PostedIntentSource` |
+| `DetourEventName` | `PostedEventName` |
+| `LinkType` | `PostedLinkType` |
+| `LinkProcessingMode` | `PostedLinkProcessingMode` |
 
 ---
 
 ## License
 
 This library is licensed under [The MIT License](./LICENSE).
-
-## Detour Flutter Plugin is created by Software Mansion
-
-Since 2012, [Software Mansion](https://swmansion.com) is a software agency with experience in building web and mobile apps. We are Core React Native Contributors and experts in dealing with all kinds of React Native issues. We can help you build your next dream product – [Hire us](https://swmansion.com/contact/projects?utm_source=detour&utm_medium=readme).
-
-[![swm](https://logo.swmansion.com/logo?color=white&variant=desktop&width=150&tag=detour-flutter-github "Software Mansion")](https://swmansion.com)

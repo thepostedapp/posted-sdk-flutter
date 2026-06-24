@@ -1,4 +1,4 @@
-package com.example.detour_flutter_plugin_example
+package com.example.posted_sdk_example
 
 import io.flutter.embedding.android.FlutterActivity
 

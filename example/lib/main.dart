@@ -1,4 +1,4 @@
-import 'package:detour_flutter_plugin/detour_flutter_plugin.dart';
+import 'package:posted_sdk/posted_sdk.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -21,34 +21,34 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
-  final _detourService = DetourService();
+  final _postedService = PostedService();
 
-  DetourIntent? _initialIntent;
-  DetourIntent? _runtimeIntent;
-  DetourIntent? _manualIntent;
-  DetourResult? _processedResult;
+  PostedIntent? _initialIntent;
+  PostedIntent? _runtimeIntent;
+  PostedIntent? _manualIntent;
+  PostedResult? _processedResult;
   String _status = 'Initializing...';
 
   @override
   void initState() {
     super.initState();
-    _detourService.addListener(_onDetourChanged);
+    _postedService.addListener(_onPostedChanged);
     _init();
   }
 
   Future<void> _init() async {
     try {
-      await _detourService.start(
-        DetourConfig(
-          apiKey: dotenv.env['DETOUR_API_KEY'] ?? 'YOUR_API_KEY',
-          appID: dotenv.env['DETOUR_APP_ID'] ?? 'YOUR_APP_ID',
+      await _postedService.start(
+        PostedConfig(
+          apiKey: dotenv.env['POSTED_API_KEY'] ?? 'YOUR_API_KEY',
+          appID: dotenv.env['POSTED_APP_ID'] ?? 'YOUR_APP_ID',
           shouldUseClipboard: true,
-          linkProcessingMode: LinkProcessingMode.all,
+          linkProcessingMode: PostedLinkProcessingMode.all,
         ),
       );
 
       if (mounted &&
-          _detourService.isInitialLinkProcessed &&
+          _postedService.isInitialLinkProcessed &&
           _status == 'Initializing...') {
         setState(() => _status = 'Ready');
       }
@@ -58,38 +58,38 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  void _onDetourChanged() {
+  void _onPostedChanged() {
     if (!mounted) return;
 
-    final intent = _detourService.pendingIntent;
+    final intent = _postedService.pendingIntent;
     if (intent != null) {
       setState(() {
         switch (intent.source) {
-          case DetourIntentSource.initial:
+          case PostedIntentSource.initial:
             _initialIntent = intent;
             break;
-          case DetourIntentSource.runtime:
+          case PostedIntentSource.runtime:
             _runtimeIntent = intent;
             break;
-          case DetourIntentSource.manual:
+          case PostedIntentSource.manual:
             _manualIntent = intent;
             break;
         }
         _status = 'Handled ${intent.source.name} intent';
       });
-      _detourService.consumePendingIntent();
+      _postedService.consumePendingIntent();
       return;
     }
 
-    if (_detourService.isInitialLinkProcessed && _status == 'Initializing...') {
+    if (_postedService.isInitialLinkProcessed && _status == 'Initializing...') {
       setState(() => _status = 'Ready');
     }
   }
 
   @override
   void dispose() {
-    _detourService.removeListener(_onDetourChanged);
-    _detourService.dispose();
+    _postedService.removeListener(_onPostedChanged);
+    _postedService.dispose();
     super.dispose();
   }
 
@@ -101,8 +101,8 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _processTestLink() async {
     try {
-      final result = await _detourService.processLink(
-        // Use a test URL that matches your Detour dashboard setup for testing.
+      final result = await _postedService.processLink(
+        // Use a test URL that matches your posted-sdk dashboard setup for testing.
         'https://godetour.link/abc123?campaign=test',
       );
       if (!mounted) return;
@@ -116,8 +116,8 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _logEvent() async {
-    await _detourService.logEvent(
-      DetourEventName.purchase,
+    await _postedService.logEvent(
+      PostedEventName.purchase,
       data: {'value': 9.99, 'currency': 'USD'},
     );
     if (!mounted) return;
@@ -126,7 +126,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _logRetention() async {
-    await _detourService.logRetention('home_screen_viewed');
+    await _postedService.logRetention('home_screen_viewed');
     if (!mounted) return;
     setState(() => _status = 'logRetention sent');
     _showSnackBar('logRetention sent (home_screen_viewed)');
@@ -137,7 +137,7 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       scaffoldMessengerKey: _scaffoldMessengerKey,
       home: Scaffold(
-        appBar: AppBar(title: const Text('Detour Flutter Plugin')),
+        appBar: AppBar(title: const Text('posted-sdk Flutter Example')),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -146,7 +146,7 @@ class _MyAppState extends State<MyApp> {
               Text('Status: $_status'),
               const SizedBox(height: 8),
               Text(
-                'Initial processed: ${_detourService.isInitialLinkProcessed}',
+                'Initial processed: ${_postedService.isInitialLinkProcessed}',
               ),
               const SizedBox(height: 16),
               _IntentCard('Initial Intent', _initialIntent),
@@ -187,7 +187,7 @@ class _IntentCard extends StatelessWidget {
   const _IntentCard(this.title, this.intent);
 
   final String title;
-  final DetourIntent? intent;
+  final PostedIntent? intent;
 
   @override
   Widget build(BuildContext context) {
@@ -218,7 +218,7 @@ class _IntentCard extends StatelessWidget {
 
 class _ResultCard extends StatelessWidget {
   final String title;
-  final DetourResult? result;
+  final PostedResult? result;
 
   const _ResultCard(this.title, this.result);
 

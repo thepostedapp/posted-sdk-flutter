@@ -1,33 +1,33 @@
 import 'dart:async';
 
-import 'package:detour_flutter_plugin/detour_flutter_plugin.dart';
-import 'package:detour_flutter_plugin/detour_flutter_plugin_platform_interface.dart';
+import 'package:posted_sdk/posted_sdk.dart';
+import 'package:posted_sdk/posted_sdk_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
-class FakeDetourPlatform extends DetourFlutterPluginPlatform
+class FakePostedPlatform extends PostedSdkPlatform
     with MockPlatformInterfaceMixin {
-  FakeDetourPlatform({required this.initialResult, required this.manualResult});
+  FakePostedPlatform({required this.initialResult, required this.manualResult});
 
-  final StreamController<DetourResult> _runtimeController =
-      StreamController<DetourResult>.broadcast();
+  final StreamController<PostedResult> _runtimeController =
+      StreamController<PostedResult>.broadcast();
 
-  final DetourResult initialResult;
-  final DetourResult manualResult;
+  final PostedResult initialResult;
+  final PostedResult manualResult;
 
   int configureCalls = 0;
 
   @override
-  Future<void> configure(DetourConfig config) async {
+  Future<void> configure(PostedConfig config) async {
     configureCalls += 1;
   }
 
   @override
-  Stream<DetourResult> get linkStream => _runtimeController.stream;
+  Stream<PostedResult> get linkStream => _runtimeController.stream;
 
   @override
   Future<void> logEvent(
-    DetourEventName eventName, {
+    PostedEventName eventName, {
     Map<String, dynamic>? data,
   }) async {}
 
@@ -35,16 +35,16 @@ class FakeDetourPlatform extends DetourFlutterPluginPlatform
   Future<void> logRetention(String eventName) async {}
 
   @override
-  Future<DetourResult> processLink(String url) async {
+  Future<PostedResult> processLink(String url) async {
     return manualResult;
   }
 
   @override
-  Future<DetourResult> resolveInitialLink() async {
+  Future<PostedResult> resolveInitialLink() async {
     return initialResult;
   }
 
-  void emitRuntime(DetourResult result) {
+  void emitRuntime(PostedResult result) {
     _runtimeController.add(result);
   }
 
@@ -53,17 +53,17 @@ class FakeDetourPlatform extends DetourFlutterPluginPlatform
   }
 }
 
-const _config = DetourConfig(
+const _config = PostedConfig(
   apiKey: 'api-key',
   appID: 'app-id',
   shouldUseClipboard: true,
-  linkProcessingMode: LinkProcessingMode.all,
+  linkProcessingMode: PostedLinkProcessingMode.all,
 );
 
-DetourResult _resultFor(String route, LinkType type) {
-  return DetourResult(
+PostedResult _resultFor(String route, PostedLinkType type) {
+  return PostedResult(
     processed: true,
-    link: DetourLink(
+    link: PostedLink(
       url: 'https://detour.dev$route',
       route: route,
       pathname: route.split('?').first,
@@ -75,12 +75,15 @@ DetourResult _resultFor(String route, LinkType type) {
 
 void main() {
   test('start() sets readiness and publishes initial intent', () async {
-    final platform = FakeDetourPlatform(
-      initialResult: _resultFor('/promo?campaign=spring', LinkType.deferred),
-      manualResult: const DetourResult(processed: true, link: null),
+    final platform = FakePostedPlatform(
+      initialResult: _resultFor(
+        '/promo?campaign=spring',
+        PostedLinkType.deferred,
+      ),
+      manualResult: const PostedResult(processed: true, link: null),
     );
 
-    final service = DetourService(platform: platform);
+    final service = PostedService(platform: platform);
 
     await service.start(_config);
 
@@ -88,7 +91,7 @@ void main() {
     expect(service.isStarted, true);
     expect(service.isInitialLinkProcessed, true);
     expect(service.pendingIntent, isNotNull);
-    expect(service.pendingIntent?.source, DetourIntentSource.initial);
+    expect(service.pendingIntent?.source, PostedIntentSource.initial);
     expect(service.pendingIntent?.link.route, '/promo?campaign=spring');
 
     service.consumePendingIntent();
@@ -102,13 +105,13 @@ void main() {
   test(
     'suppresses short-window duplicates between initial and runtime',
     () async {
-      final link = _resultFor('/details?id=1', LinkType.verified);
-      final platform = FakeDetourPlatform(
+      final link = _resultFor('/details?id=1', PostedLinkType.verified);
+      final platform = FakePostedPlatform(
         initialResult: link,
-        manualResult: const DetourResult(processed: true, link: null),
+        manualResult: const PostedResult(processed: true, link: null),
       );
 
-      final service = DetourService(
+      final service = PostedService(
         platform: platform,
         duplicateSuppressionWindow: const Duration(milliseconds: 120),
       );
@@ -121,11 +124,13 @@ void main() {
 
       expect(service.pendingIntent, isNull);
 
-      platform.emitRuntime(_resultFor('/details?id=2', LinkType.verified));
+      platform.emitRuntime(
+        _resultFor('/details?id=2', PostedLinkType.verified),
+      );
       await Future<void>.delayed(const Duration(milliseconds: 10));
 
       expect(service.pendingIntent, isNotNull);
-      expect(service.pendingIntent?.source, DetourIntentSource.runtime);
+      expect(service.pendingIntent?.source, PostedIntentSource.runtime);
       expect(service.pendingIntent?.link.route, '/details?id=2');
 
       service.consumePendingIntent();
@@ -144,13 +149,13 @@ void main() {
   );
 
   test('processLink can emit manual intent optionally', () async {
-    final manual = _resultFor('/manual', LinkType.scheme);
-    final platform = FakeDetourPlatform(
-      initialResult: const DetourResult(processed: true, link: null),
+    final manual = _resultFor('/manual', PostedLinkType.scheme);
+    final platform = FakePostedPlatform(
+      initialResult: const PostedResult(processed: true, link: null),
       manualResult: manual,
     );
 
-    final service = DetourService(platform: platform);
+    final service = PostedService(platform: platform);
     await service.start(_config);
 
     expect(service.pendingIntent, isNull);
@@ -160,7 +165,7 @@ void main() {
 
     await service.processLink('detour://manual', emitIntent: true);
     expect(service.pendingIntent, isNotNull);
-    expect(service.pendingIntent?.source, DetourIntentSource.manual);
+    expect(service.pendingIntent?.source, PostedIntentSource.manual);
     expect(service.pendingIntent?.link.route, '/manual');
 
     await service.stop();

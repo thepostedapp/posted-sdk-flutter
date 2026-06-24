@@ -1,11 +1,11 @@
 import Flutter
 import XCTest
 
-@testable import detour_flutter_plugin
+@testable import posted_sdk
 
 class RunnerTests: XCTestCase {
   func testConfigureWithoutRequiredArgsReturnsInvalidArgs() {
-    let plugin = DetourFlutterPlugin()
+    let plugin = PostedFlutterPlugin()
     let call = FlutterMethodCall(methodName: "configure", arguments: [:])
 
     let resultExpectation = expectation(description: "result block must be called")

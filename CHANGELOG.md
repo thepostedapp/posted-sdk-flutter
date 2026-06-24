@@ -1,3 +1,13 @@
+## 2.0.0
+
+* **Breaking:** Package renamed from `detour_flutter_plugin` to `posted_sdk`.
+* **Breaking:** All public Dart symbols renamed with `Posted` prefix (`DetourFlutterPlugin` → `PostedSdk`, `DetourService` → `PostedService`, `DetourConfig` → `PostedConfig`, `DetourResult` → `PostedResult`, `DetourLink` → `PostedLink`, `DetourEventName` → `PostedEventName`, `LinkType` → `PostedLinkType`, `LinkProcessingMode` → `PostedLinkProcessingMode`, etc.).
+* **Breaking:** Method channel renamed from `detour_flutter_plugin` to `posted_sdk`; event channel from `detour_flutter_plugin/links` to `posted_sdk/links`.
+* **Breaking:** Native pluginClass renamed to `PostedFlutterPlugin` on both iOS and Android.
+* **Breaking:** Android package renamed from `com.swmansion.detour` to `com.postedapp.posted`.
+* **Breaking:** iOS/Android Flutter marker class renamed from `DetourFlutterMarker` to `PostedFlutterMarker`.
+* Deprecated type-alias shims provided for all renamed public symbols — will be removed in v3.0.
+
 ## 1.2.0
 
 * Improve universal link analytics.

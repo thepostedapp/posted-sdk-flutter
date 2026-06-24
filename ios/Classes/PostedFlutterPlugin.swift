@@ -2,7 +2,7 @@ import Flutter
 import UIKit
 import Detour
 
-public class DetourFlutterPlugin: NSObject, FlutterPlugin, FlutterApplicationLifeCycleDelegate, FlutterSceneLifeCycleDelegate {
+public class PostedFlutterPlugin: NSObject, FlutterPlugin, FlutterApplicationLifeCycleDelegate, FlutterSceneLifeCycleDelegate {
     private var config: DetourConfig?
     private var launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     private var eventSink: FlutterEventSink?
@@ -10,14 +10,14 @@ public class DetourFlutterPlugin: NSObject, FlutterPlugin, FlutterApplicationLif
 
     public static func register(with registrar: FlutterPluginRegistrar) {
         let methodChannel = FlutterMethodChannel(
-            name: "detour_flutter_plugin",
+            name: "posted_sdk",
             binaryMessenger: registrar.messenger()
         )
         let eventChannel = FlutterEventChannel(
-            name: "detour_flutter_plugin/links",
+            name: "posted_sdk/links",
             binaryMessenger: registrar.messenger()
         )
-        let instance = DetourFlutterPlugin()
+        let instance = PostedFlutterPlugin()
         registrar.addMethodCallDelegate(instance, channel: methodChannel)
         eventChannel.setStreamHandler(instance)
         registrar.addApplicationDelegate(instance)
@@ -316,7 +316,7 @@ public class DetourFlutterPlugin: NSObject, FlutterPlugin, FlutterApplicationLif
 
 // MARK: - FlutterStreamHandler
 
-extension DetourFlutterPlugin: FlutterStreamHandler {
+extension PostedFlutterPlugin: FlutterStreamHandler {
     public func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
         self.eventSink = events
         flushPendingRuntimeURLsIfPossible()

@@ -1,5 +1,5 @@
-group = "com.swmansion.detour"
-version = "1.2.0"
+group = "com.postedapp.posted"
+version = "2.0.0"
 
 buildscript {
     val kotlinVersion = "2.2.20"
@@ -27,7 +27,7 @@ plugins {
 }
 
 android {
-    namespace = "com.swmansion.detour"
+    namespace = "com.postedapp.posted"
     val flutterSdkHeaderValue = "flutter/$version"
 
     compileSdk = 36

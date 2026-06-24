@@ -1,1 +1,1 @@
-rootProject.name = 'detour_flutter_plugin'
+rootProject.name = 'posted_sdk'

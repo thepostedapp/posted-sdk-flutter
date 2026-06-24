@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import '../detour_flutter_plugin_platform_interface.dart';
+import '../posted_sdk_platform_interface.dart';
 import 'models.dart';
 
-/// Origin of a resolved Detour link emitted by [DetourService].
-enum DetourIntentSource {
+/// Origin of a resolved link emitted by [PostedService].
+enum PostedIntentSource {
   /// Link resolved from cold-start flow via `resolveInitialLink()`.
   initial,
 
@@ -17,32 +17,32 @@ enum DetourIntentSource {
   manual,
 }
 
-/// A single navigation intent produced by [DetourService].
-class DetourIntent {
-  const DetourIntent({
+/// A single navigation intent produced by [PostedService].
+class PostedIntent {
+  const PostedIntent({
     required this.link,
     required this.source,
     required this.receivedAt,
   });
 
-  final DetourLink link;
-  final DetourIntentSource source;
+  final PostedLink link;
+  final PostedIntentSource source;
   final DateTime receivedAt;
 
   String get dedupeKey => '${link.type.name}|${link.url.toLowerCase()}';
 }
 
-/// High-level orchestration layer for routing-safe Detour integration.
+/// High-level orchestration layer for routing-safe posted-sdk integration.
 ///
-/// This service merges initial and runtime Detour results into a single pending
+/// This service merges initial and runtime results into a single pending
 /// intent and exposes readiness state with explicit consume semantics.
-class DetourService extends ChangeNotifier {
-  DetourService({
-    DetourFlutterPluginPlatform? platform,
+class PostedService extends ChangeNotifier {
+  PostedService({
+    PostedSdkPlatform? platform,
     this.duplicateSuppressionWindow = const Duration(seconds: 2),
-  }) : _platform = platform ?? DetourFlutterPluginPlatform.instance;
+  }) : _platform = platform ?? PostedSdkPlatform.instance;
 
-  final DetourFlutterPluginPlatform _platform;
+  final PostedSdkPlatform _platform;
 
   /// Time window used to suppress duplicate initial/runtime emissions for the
   /// same link key (`type|url`).
@@ -50,11 +50,11 @@ class DetourService extends ChangeNotifier {
 
   final Map<String, DateTime> _recentEmissions = {};
 
-  StreamSubscription<DetourResult>? _runtimeSubscription;
+  StreamSubscription<PostedResult>? _runtimeSubscription;
 
   bool _started = false;
   bool _isInitialLinkProcessed = false;
-  DetourIntent? _pendingIntent;
+  PostedIntent? _pendingIntent;
 
   bool get isStarted => _started;
 
@@ -62,26 +62,26 @@ class DetourService extends ChangeNotifier {
   bool get isInitialLinkProcessed => _isInitialLinkProcessed;
 
   /// Last pending intent waiting to be consumed by the app's navigation layer.
-  DetourIntent? get pendingIntent => _pendingIntent;
+  PostedIntent? get pendingIntent => _pendingIntent;
 
-  /// Starts Detour flow:
+  /// Starts the SDK flow:
   /// 1. configures native SDK,
   /// 2. subscribes runtime stream,
   /// 3. resolves initial link.
   ///
   /// Safe to call multiple times; only first call starts the service.
-  Future<void> start(DetourConfig config) async {
+  Future<void> start(PostedConfig config) async {
     if (_started) return;
 
     await _platform.configure(config);
     _started = true;
 
     _runtimeSubscription = _platform.linkStream.listen((result) {
-      _registerResult(result, source: DetourIntentSource.runtime);
+      _registerResult(result, source: PostedIntentSource.runtime);
     });
 
     final initial = await _platform.resolveInitialLink();
-    _registerResult(initial, source: DetourIntentSource.initial);
+    _registerResult(initial, source: PostedIntentSource.initial);
 
     _isInitialLinkProcessed = true;
     notifyListeners();
@@ -89,16 +89,16 @@ class DetourService extends ChangeNotifier {
 
   /// Processes an arbitrary URL through native SDK and optionally emits
   /// a navigation intent.
-  Future<DetourResult> processLink(String url, {bool emitIntent = true}) async {
+  Future<PostedResult> processLink(String url, {bool emitIntent = true}) async {
     final result = await _platform.processLink(url);
     if (emitIntent) {
-      _registerResult(result, source: DetourIntentSource.manual);
+      _registerResult(result, source: PostedIntentSource.manual);
     }
     return result;
   }
 
   Future<void> logEvent(
-    DetourEventName eventName, {
+    PostedEventName eventName, {
     Map<String, dynamic>? data,
   }) {
     return _platform.logEvent(eventName, data: data);
@@ -133,8 +133,8 @@ class DetourService extends ChangeNotifier {
   }
 
   void _registerResult(
-    DetourResult result, {
-    required DetourIntentSource source,
+    PostedResult result, {
+    required PostedIntentSource source,
   }) {
     final link = result.link;
     if (link == null) return;
@@ -142,7 +142,7 @@ class DetourService extends ChangeNotifier {
     final now = DateTime.now();
     _evictExpiredDedupeEntries(now);
 
-    final intent = DetourIntent(link: link, source: source, receivedAt: now);
+    final intent = PostedIntent(link: link, source: source, receivedAt: now);
 
     final previous = _recentEmissions[intent.dedupeKey];
     if (previous != null &&

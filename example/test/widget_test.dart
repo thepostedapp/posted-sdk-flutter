@@ -1,12 +1,12 @@
-import 'package:detour_flutter_plugin_example/main.dart';
+import 'package:posted_sdk_example/main.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const methodChannel = MethodChannel('detour_flutter_plugin');
-  const eventsChannel = MethodChannel('detour_flutter_plugin/links');
+  const methodChannel = MethodChannel('posted_sdk');
+  const eventsChannel = MethodChannel('posted_sdk/links');
 
   setUp(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -43,7 +43,7 @@ void main() {
     await tester.pumpWidget(const MyApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Detour Flutter Plugin'), findsOneWidget);
+    expect(find.text('posted-sdk Flutter Example'), findsOneWidget);
     expect(find.textContaining('Status: Ready'), findsOneWidget);
   });
 }

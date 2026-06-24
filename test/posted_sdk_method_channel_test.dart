@@ -1,13 +1,13 @@
-import 'package:detour_flutter_plugin/detour_flutter_plugin.dart';
-import 'package:detour_flutter_plugin/detour_flutter_plugin_method_channel.dart';
+import 'package:posted_sdk/posted_sdk.dart';
+import 'package:posted_sdk/posted_sdk_method_channel.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  final platform = MethodChannelDetourFlutterPlugin();
-  const channel = MethodChannel('detour_flutter_plugin');
+  final platform = MethodChannelPostedSdk();
+  const channel = MethodChannel('posted_sdk');
 
   final calls = <MethodCall>[];
 
@@ -43,11 +43,11 @@ void main() {
 
   test('configure sends expected payload', () async {
     await platform.configure(
-      const DetourConfig(
+      const PostedConfig(
         apiKey: 'api-key',
         appID: 'app-id',
         shouldUseClipboard: false,
-        linkProcessingMode: LinkProcessingMode.webOnly,
+        linkProcessingMode: PostedLinkProcessingMode.webOnly,
       ),
     );
 
@@ -61,7 +61,7 @@ void main() {
     });
   });
 
-  test('resolveInitialLink maps native payload into DetourResult', () async {
+  test('resolveInitialLink maps native payload into PostedResult', () async {
     final result = await platform.resolveInitialLink();
 
     expect(result.processed, true);
@@ -69,12 +69,12 @@ void main() {
     expect(result.link?.route, '/promo?campaign=spring');
     expect(result.link?.pathname, '/promo');
     expect(result.link?.params['campaign'], 'spring');
-    expect(result.link?.type, LinkType.verified);
+    expect(result.link?.type, PostedLinkType.verified);
   });
 
   test('logEvent sends enum raw value', () async {
     await platform.logEvent(
-      DetourEventName.addToCart,
+      PostedEventName.addToCart,
       data: {'sku': 'ABC-123'},
     );
 
@@ -109,7 +109,7 @@ void main() {
   });
 
   test('logEvent with null data passes null in data field', () async {
-    await platform.logEvent(DetourEventName.login);
+    await platform.logEvent(PostedEventName.login);
 
     expect(calls, hasLength(1));
     expect(calls.first.method, 'logEvent');
