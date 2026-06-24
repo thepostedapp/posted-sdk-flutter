@@ -93,4 +93,26 @@ void main() {
     expect(calls.first.method, 'logRetention');
     expect(calls.first.arguments, {'eventName': 'home_screen_viewed'});
   });
+
+  test('processLink sends url without mutation', () async {
+    final result = await platform.processLink(
+      'https://godetour.dev/u/launch?campaign=spring',
+    );
+
+    expect(calls, hasLength(1));
+    expect(calls.first.method, 'processLink');
+    expect(calls.first.arguments, {
+      'url': 'https://godetour.dev/u/launch?campaign=spring',
+    });
+    expect(result.processed, true);
+    expect(result.link, isNull);
+  });
+
+  test('logEvent with null data passes null in data field', () async {
+    await platform.logEvent(DetourEventName.login);
+
+    expect(calls, hasLength(1));
+    expect(calls.first.method, 'logEvent');
+    expect(calls.first.arguments, {'eventName': 'login', 'data': null});
+  });
 }
