@@ -76,7 +76,10 @@ PostedResult _resultFor(String route, PostedLinkType type) {
 void main() {
   test('start() sets readiness and publishes initial intent', () async {
     final platform = FakePostedPlatform(
-      initialResult: _resultFor('/promo?campaign=spring', PostedLinkType.deferred),
+      initialResult: _resultFor(
+        '/promo?campaign=spring',
+        PostedLinkType.deferred,
+      ),
       manualResult: const PostedResult(processed: true, link: null),
     );
 
@@ -121,7 +124,9 @@ void main() {
 
       expect(service.pendingIntent, isNull);
 
-      platform.emitRuntime(_resultFor('/details?id=2', PostedLinkType.verified));
+      platform.emitRuntime(
+        _resultFor('/details?id=2', PostedLinkType.verified),
+      );
       await Future<void>.delayed(const Duration(milliseconds: 10));
 
       expect(service.pendingIntent, isNotNull);

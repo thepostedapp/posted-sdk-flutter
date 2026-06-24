@@ -89,10 +89,7 @@ class PostedService extends ChangeNotifier {
 
   /// Processes an arbitrary URL through native SDK and optionally emits
   /// a navigation intent.
-  Future<PostedResult> processLink(
-    String url, {
-    bool emitIntent = true,
-  }) async {
+  Future<PostedResult> processLink(String url, {bool emitIntent = true}) async {
     final result = await _platform.processLink(url);
     if (emitIntent) {
       _registerResult(result, source: PostedIntentSource.manual);
