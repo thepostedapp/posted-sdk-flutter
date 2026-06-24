@@ -4,13 +4,13 @@ on:
   pull_request:
     paths:
       - "pubspec.yaml"
-      - "ios/Classes/DetourFlutterMarker.swift"
+      - "ios/Classes/PostedFlutterMarker.swift"
       - "scripts/check_ios_marker_version.sh"
       - ".github/workflows/ios-marker-version.yml"
   push:
     paths:
       - "pubspec.yaml"
-      - "ios/Classes/DetourFlutterMarker.swift"
+      - "ios/Classes/PostedFlutterMarker.swift"
       - "scripts/check_ios_marker_version.sh"
       - ".github/workflows/ios-marker-version.yml"
   workflow_dispatch:
