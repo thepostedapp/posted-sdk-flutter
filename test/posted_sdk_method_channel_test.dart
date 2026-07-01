@@ -129,28 +129,31 @@ void main() {
     expect(calls.first.arguments, {'eventName': 'login', 'data': null});
   });
 
-  test('resolveAppLaunch sends config payload and maps deferred result', () async {
-    final result = await platform.resolveAppLaunch(
-      const PostedConfig(
-        apiKey: 'api-key',
-        appID: 'app-id',
-        shouldUseClipboard: true,
-        linkProcessingMode: PostedLinkProcessingMode.all,
-      ),
-    );
+  test(
+    'resolveAppLaunch sends config payload and maps deferred result',
+    () async {
+      final result = await platform.resolveAppLaunch(
+        const PostedConfig(
+          apiKey: 'api-key',
+          appID: 'app-id',
+          shouldUseClipboard: true,
+          linkProcessingMode: PostedLinkProcessingMode.all,
+        ),
+      );
 
-    expect(calls, hasLength(1));
-    expect(calls.first.method, 'resolveAppLaunch');
-    expect(calls.first.arguments, {
-      'apiKey': 'api-key',
-      'appID': 'app-id',
-      'shouldUseClipboard': true,
-      'linkProcessingMode': 'all',
-    });
-    expect(result.processed, true);
-    expect(result.link?.type, PostedLinkType.deferred);
-    expect(result.link?.route, '/onboarding');
-  });
+      expect(calls, hasLength(1));
+      expect(calls.first.method, 'resolveAppLaunch');
+      expect(calls.first.arguments, {
+        'apiKey': 'api-key',
+        'appID': 'app-id',
+        'shouldUseClipboard': true,
+        'linkProcessingMode': 'all',
+      });
+      expect(result.processed, true);
+      expect(result.link?.type, PostedLinkType.deferred);
+      expect(result.link?.route, '/onboarding');
+    },
+  );
 
   test('resetSession sends void call to native', () async {
     await platform.resetSession();

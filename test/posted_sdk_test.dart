@@ -105,55 +105,72 @@ void main() {
     expect(fakePlatform.loggedEventData?['currency'], 'USD');
   });
 
-  test('resolveAppLaunch returns LINK-PRESENT branch result (verified link)', () async {
-    final plugin = PostedSdk();
-    final fakePlatform = MockPostedSdkPlatform();
-    fakePlatform.resolveAppLaunchResult =
-        _linkResult('/promo?campaign=spring', PostedLinkType.verified);
-    PostedSdkPlatform.instance = fakePlatform;
+  test(
+    'resolveAppLaunch returns LINK-PRESENT branch result (verified link)',
+    () async {
+      final plugin = PostedSdk();
+      final fakePlatform = MockPostedSdkPlatform();
+      fakePlatform.resolveAppLaunchResult = _linkResult(
+        '/promo?campaign=spring',
+        PostedLinkType.verified,
+      );
+      PostedSdkPlatform.instance = fakePlatform;
 
-    final result = await plugin.resolveAppLaunch(_config);
+      final result = await plugin.resolveAppLaunch(_config);
 
-    expect(result.processed, true);
-    expect(result.link, isNotNull);
-    expect(result.link?.type, PostedLinkType.verified);
-    expect(result.link?.route, '/promo?campaign=spring');
-    expect(fakePlatform.resolveAppLaunchCalls, 1);
-  });
+      expect(result.processed, true);
+      expect(result.link, isNotNull);
+      expect(result.link?.type, PostedLinkType.verified);
+      expect(result.link?.route, '/promo?campaign=spring');
+      expect(fakePlatform.resolveAppLaunchCalls, 1);
+    },
+  );
 
-  test('resolveAppLaunch returns DEFERRED branch result (deferred link)', () async {
-    final plugin = PostedSdk();
-    final fakePlatform = MockPostedSdkPlatform();
-    fakePlatform.resolveAppLaunchResult =
-        _linkResult('/onboarding', PostedLinkType.deferred);
-    PostedSdkPlatform.instance = fakePlatform;
+  test(
+    'resolveAppLaunch returns DEFERRED branch result (deferred link)',
+    () async {
+      final plugin = PostedSdk();
+      final fakePlatform = MockPostedSdkPlatform();
+      fakePlatform.resolveAppLaunchResult = _linkResult(
+        '/onboarding',
+        PostedLinkType.deferred,
+      );
+      PostedSdkPlatform.instance = fakePlatform;
 
-    final result = await plugin.resolveAppLaunch(_config);
+      final result = await plugin.resolveAppLaunch(_config);
 
-    expect(result.processed, true);
-    expect(result.link?.type, PostedLinkType.deferred);
-    expect(result.link?.route, '/onboarding');
-  });
+      expect(result.processed, true);
+      expect(result.link?.type, PostedLinkType.deferred);
+      expect(result.link?.route, '/onboarding');
+    },
+  );
 
-  test('resolveAppLaunch cache short-circuits: second call does not hit platform', () async {
-    final plugin = PostedSdk();
-    final fakePlatform = MockPostedSdkPlatform();
-    fakePlatform.resolveAppLaunchResult =
-        _linkResult('/campaign', PostedLinkType.verified);
-    PostedSdkPlatform.instance = fakePlatform;
+  test(
+    'resolveAppLaunch cache short-circuits: second call does not hit platform',
+    () async {
+      final plugin = PostedSdk();
+      final fakePlatform = MockPostedSdkPlatform();
+      fakePlatform.resolveAppLaunchResult = _linkResult(
+        '/campaign',
+        PostedLinkType.verified,
+      );
+      PostedSdkPlatform.instance = fakePlatform;
 
-    final first = await plugin.resolveAppLaunch(_config);
-    final second = await plugin.resolveAppLaunch(_config);
+      final first = await plugin.resolveAppLaunch(_config);
+      final second = await plugin.resolveAppLaunch(_config);
 
-    expect(fakePlatform.resolveAppLaunchCalls, 1);
-    expect(identical(first, second), true);
-  });
+      expect(fakePlatform.resolveAppLaunchCalls, 1);
+      expect(identical(first, second), true);
+    },
+  );
 
   test('resetSession clears Dart cache and re-arms platform', () async {
     final plugin = PostedSdk();
     final fakePlatform = MockPostedSdkPlatform();
-    fakePlatform.resolveAppLaunchResult =
-        _linkResult('/campaign', PostedLinkType.deferred);
+    fakePlatform.resolveAppLaunchResult = _linkResult(
+      '/campaign',
+      PostedLinkType.deferred,
+    );
     PostedSdkPlatform.instance = fakePlatform;
 
     await plugin.resolveAppLaunch(_config);
