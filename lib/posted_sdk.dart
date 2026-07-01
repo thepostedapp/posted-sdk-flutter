@@ -10,8 +10,10 @@ export 'src/posted_service.dart';
 
 class PostedSdk {
   PostedResult? _cachedLaunchResult;
+  PostedConfig? _config;
 
   Future<void> configure(PostedConfig config) {
+    _config = config;
     return PostedSdkPlatform.instance.configure(config);
   }
 
@@ -22,6 +24,7 @@ class PostedSdk {
   /// persists the fire-once flag and cached result across app updates; only a
   /// reinstall or [resetSession] call re-arms it.
   Future<PostedResult> resolveAppLaunch(PostedConfig config) async {
+    _config = config;
     if (_cachedLaunchResult != null) {
       return _cachedLaunchResult!;
     }
@@ -46,10 +49,19 @@ class PostedSdk {
       'posted-sdk: resolveInitialLink() is deprecated. '
       'Use resolveAppLaunch(config) instead.',
     );
-    return PostedSdkPlatform.instance.resolveInitialLink();
+    assert(_config != null, 'Call configure() before resolveInitialLink().');
+    return resolveAppLaunch(_config!);
   }
 
+  @Deprecated(
+    'Use resolveAppLaunch(config) instead. processLink() will be '
+    'removed in the next major release.',
+  )
   Future<PostedResult> processLink(String url) {
+    debugPrint(
+      'posted-sdk: processLink() is deprecated. '
+      'Use resolveAppLaunch(config) instead.',
+    );
     return PostedSdkPlatform.instance.processLink(url);
   }
 
