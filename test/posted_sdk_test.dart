@@ -30,6 +30,8 @@ class MockPostedSdkPlatform
   Map<String, dynamic>? loggedEventData;
   String? retentionEvent;
   int resolveAppLaunchCalls = 0;
+  int processLinkCalls = 0;
+  String? lastProcessLinkUrl;
   PostedResult resolveAppLaunchResult = const PostedResult(
     processed: true,
     link: null,
@@ -60,6 +62,8 @@ class MockPostedSdkPlatform
 
   @override
   Future<PostedResult> processLink(String url) async {
+    processLinkCalls++;
+    lastProcessLinkUrl = url;
     return const PostedResult(processed: true, link: null);
   }
 
@@ -183,4 +187,72 @@ void main() {
     await plugin.resolveAppLaunch(_config);
     expect(fakePlatform.resolveAppLaunchCalls, 2);
   });
+
+  test('configure() stores config for use by deprecated shims', () async {
+    final plugin = PostedSdk();
+    final fakePlatform = MockPostedSdkPlatform();
+    PostedSdkPlatform.instance = fakePlatform;
+
+    await plugin.configure(_config);
+
+    expect(fakePlatform.configuredWith, _config);
+  });
+
+  test(
+    'resolveInitialLink() routes through resolveAppLaunch (fire-once shared)',
+    () async {
+      final plugin = PostedSdk();
+      final fakePlatform = MockPostedSdkPlatform();
+      fakePlatform.resolveAppLaunchResult = _linkResult(
+        '/onboarding',
+        PostedLinkType.deferred,
+      );
+      PostedSdkPlatform.instance = fakePlatform;
+
+      await plugin.configure(_config);
+      // ignore: deprecated_member_use
+      final result = await plugin.resolveInitialLink();
+
+      expect(result.link?.route, '/onboarding');
+      // Must route through resolveAppLaunch, not the old resolveInitialLink path.
+      expect(fakePlatform.resolveAppLaunchCalls, 1);
+    },
+  );
+
+  test(
+    'resolveInitialLink() shares fire-once cache with resolveAppLaunch',
+    () async {
+      final plugin = PostedSdk();
+      final fakePlatform = MockPostedSdkPlatform();
+      fakePlatform.resolveAppLaunchResult = _linkResult(
+        '/campaign',
+        PostedLinkType.verified,
+      );
+      PostedSdkPlatform.instance = fakePlatform;
+
+      // First call via resolveAppLaunch warms the cache.
+      await plugin.resolveAppLaunch(_config);
+      expect(fakePlatform.resolveAppLaunchCalls, 1);
+
+      // Deprecated shim must return the cached result — no second platform call.
+      // ignore: deprecated_member_use
+      await plugin.resolveInitialLink();
+      expect(fakePlatform.resolveAppLaunchCalls, 1);
+    },
+  );
+
+  test(
+    'processLink() is deprecated: delegates to platform processLink',
+    () async {
+      final plugin = PostedSdk();
+      final fakePlatform = MockPostedSdkPlatform();
+      PostedSdkPlatform.instance = fakePlatform;
+
+      // ignore: deprecated_member_use
+      await plugin.processLink('https://example.com/promo');
+
+      expect(fakePlatform.processLinkCalls, 1);
+      expect(fakePlatform.lastProcessLinkUrl, 'https://example.com/promo');
+    },
+  );
 }
