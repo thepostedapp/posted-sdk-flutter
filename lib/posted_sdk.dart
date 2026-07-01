@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import 'src/models.dart';
 import 'src/posted_service.dart';
 import 'posted_sdk_platform_interface.dart';
@@ -7,11 +9,43 @@ export 'src/models.dart';
 export 'src/posted_service.dart';
 
 class PostedSdk {
+  PostedResult? _cachedLaunchResult;
+
   Future<void> configure(PostedConfig config) {
     return PostedSdkPlatform.instance.configure(config);
   }
 
+  /// Resolves app launch attribution using the 3.0.0 single-entry-point facade.
+  ///
+  /// Fire-once: the result is cached after the first call. Subsequent calls in
+  /// the same session return the cached result immediately. The native layer
+  /// persists the fire-once flag and cached result across app updates; only a
+  /// reinstall or [resetSession] call re-arms it.
+  Future<PostedResult> resolveAppLaunch(PostedConfig config) async {
+    if (_cachedLaunchResult != null) {
+      return _cachedLaunchResult!;
+    }
+    final result = await PostedSdkPlatform.instance.resolveAppLaunch(config);
+    _cachedLaunchResult = result;
+    return result;
+  }
+
+  /// Re-arms fire-once: clears the Dart-session cache and calls native
+  /// resetSession so the next [resolveAppLaunch] performs a fresh resolution.
+  Future<void> resetSession() async {
+    _cachedLaunchResult = null;
+    await PostedSdkPlatform.instance.resetSession();
+  }
+
+  @Deprecated(
+    'Use resolveAppLaunch(config) instead. resolveInitialLink() will be '
+    'removed in the next major release.',
+  )
   Future<PostedResult> resolveInitialLink() {
+    debugPrint(
+      'posted-sdk: resolveInitialLink() is deprecated. '
+      'Use resolveAppLaunch(config) instead.',
+    );
     return PostedSdkPlatform.instance.resolveInitialLink();
   }
 

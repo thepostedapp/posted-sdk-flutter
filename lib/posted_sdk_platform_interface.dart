@@ -29,6 +29,16 @@ abstract class PostedSdkPlatform extends PlatformInterface {
     throw UnimplementedError('resolveInitialLink() has not been implemented.');
   }
 
+  /// Resolves app launch attribution via the 3.0.0 facade (fire-once, cached).
+  Future<PostedResult> resolveAppLaunch(PostedConfig config) {
+    throw UnimplementedError('resolveAppLaunch() has not been implemented.');
+  }
+
+  /// Re-arms fire-once; next [resolveAppLaunch] call performs a fresh network call.
+  Future<void> resetSession() {
+    throw UnimplementedError('resetSession() has not been implemented.');
+  }
+
   Future<PostedResult> processLink(String url) {
     throw UnimplementedError('processLink() has not been implemented.');
   }

@@ -8,7 +8,7 @@ void main() {
 
   const channel = MethodChannel('posted_sdk');
 
-  testWidgets('configure + resolveInitialLink bridge contract', (
+  testWidgets('configure + resolveAppLaunch bridge contract', (
     WidgetTester _,
   ) async {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -16,7 +16,7 @@ void main() {
           switch (call.method) {
             case 'configure':
               return null;
-            case 'resolveInitialLink':
+            case 'resolveAppLaunch':
               return {'processed': true, 'link': null};
             default:
               return null;
@@ -27,12 +27,11 @@ void main() {
           .setMockMethodCallHandler(channel, null);
     });
 
+    const config = PostedConfig(apiKey: 'api-key', appID: 'app-id');
     final plugin = PostedSdk();
-    await plugin.configure(
-      const PostedConfig(apiKey: 'api-key', appID: 'app-id'),
-    );
+    await plugin.configure(config);
 
-    final result = await plugin.resolveInitialLink();
+    final result = await plugin.resolveAppLaunch(config);
     expect(result.processed, true);
     expect(result.link, isNull);
   });

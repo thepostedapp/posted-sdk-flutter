@@ -19,6 +19,14 @@ class NoopPostedSdk extends PostedSdkPlatform {
   }
 
   @override
+  Future<PostedResult> resolveAppLaunch(PostedConfig config) async {
+    return const PostedResult(processed: true);
+  }
+
+  @override
+  Future<void> resetSession() async {}
+
+  @override
   Future<PostedResult> processLink(String url) async {
     return const PostedResult(processed: false);
   }

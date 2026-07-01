@@ -36,6 +36,23 @@ class MethodChannelPostedSdk extends PostedSdkPlatform {
   }
 
   @override
+  Future<PostedResult> resolveAppLaunch(PostedConfig config) async {
+    final result = await methodChannel
+        .invokeMapMethod<String, dynamic>('resolveAppLaunch', {
+          'apiKey': config.apiKey,
+          'appID': config.appID,
+          'shouldUseClipboard': config.shouldUseClipboard,
+          'linkProcessingMode': config.linkProcessingMode.value,
+        });
+    return PostedResult.fromMap(result ?? {});
+  }
+
+  @override
+  Future<void> resetSession() async {
+    await methodChannel.invokeMethod<void>('resetSession');
+  }
+
+  @override
   Future<PostedResult> processLink(String url) async {
     final result = await methodChannel.invokeMapMethod<String, dynamic>(
       'processLink',
