@@ -102,16 +102,13 @@ import 'package:posted_sdk/posted_sdk.dart';
 
 final sdk = PostedSdk();
 
-await sdk.configure(
+final initial = await sdk.resolveAppLaunch(
   const PostedConfig(
     apiKey: '<REPLACE_WITH_YOUR_API_KEY>',
     appID: '<REPLACE_WITH_APP_ID_FROM_PLATFORM>',
   ),
 );
-
-final initial = await sdk.resolveInitialLink();
 final stream = sdk.linkStream;
-final processed = await sdk.processLink('https://example.com/path');
 ```
 
 </details>
@@ -290,10 +287,12 @@ High-level integration helper (extends `ChangeNotifier`):
 
 Low-level bridge API:
 
-- `Future<void> configure(PostedConfig config)`
-- `Future<PostedResult> resolveInitialLink()`
+- `Future<PostedResult> resolveAppLaunch(PostedConfig config)` — preferred entry point; fire-once, result cached
+- `Future<void> configure(PostedConfig config)` — sets config without resolving; use when you need to call deprecated shims
+- `Future<PostedResult> resolveInitialLink()` *(deprecated — use `resolveAppLaunch(config)` instead; requires `configure()` to be called first or throws `StateError`)*
+- `Future<PostedResult> processLink(String url)` *(deprecated — use `resolveAppLaunch(config)` instead)*
 - `Stream<PostedResult> get linkStream`
-- `Future<PostedResult> processLink(String url)`
+- `Future<void> resetSession()` — re-arms fire-once for the next `resolveAppLaunch` call
 - `Future<void> logEvent(PostedEventName eventName, {Map<String, dynamic>? data})`
 - `Future<void> logRetention(String eventName)`
 

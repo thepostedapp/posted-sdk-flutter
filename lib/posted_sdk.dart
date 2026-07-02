@@ -40,6 +40,24 @@ class PostedSdk {
     await PostedSdkPlatform.instance.resetSession();
   }
 
+  /// Resolves the initial attribution link. **Deprecated** — use
+  /// [resolveAppLaunch] instead.
+  ///
+  /// **Ordering requirement:** [configure] must be called before this method.
+  /// Calling without a prior [configure] throws a [StateError] in all build
+  /// modes (debug and release). In release builds Dart strips `assert`
+  /// statements, so this method uses an explicit guard — callers get an
+  /// actionable error message rather than a bare null-check crash.
+  ///
+  /// Migration:
+  /// ```dart
+  /// // Before (deprecated — configure() required separately)
+  /// await sdk.configure(config);
+  /// final result = await sdk.resolveInitialLink();
+  ///
+  /// // After — config is passed directly, no prior configure() needed
+  /// final result = await sdk.resolveAppLaunch(config);
+  /// ```
   @Deprecated(
     'Use resolveAppLaunch(config) instead. resolveInitialLink() will be '
     'removed in the next major release.',
@@ -49,7 +67,12 @@ class PostedSdk {
       'posted-sdk: resolveInitialLink() is deprecated. '
       'Use resolveAppLaunch(config) instead.',
     );
-    assert(_config != null, 'Call configure() before resolveInitialLink().');
+    if (_config == null) {
+      throw StateError(
+        'posted-sdk: configure() must be called before resolveInitialLink(). '
+        'Migrate to resolveAppLaunch(config) to avoid this requirement.',
+      );
+    }
     return resolveAppLaunch(_config!);
   }
 
