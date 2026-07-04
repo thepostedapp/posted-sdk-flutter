@@ -242,6 +242,18 @@ void main() {
   );
 
   test(
+    'resolveInitialLink() throws StateError when configure() not called first',
+    () {
+      final plugin = PostedSdk();
+      final fakePlatform = MockPostedSdkPlatform();
+      PostedSdkPlatform.instance = fakePlatform;
+
+      // ignore: deprecated_member_use
+      expect(() => plugin.resolveInitialLink(), throwsStateError);
+    },
+  );
+
+  test(
     'processLink() is deprecated: delegates to platform processLink',
     () async {
       final plugin = PostedSdk();
