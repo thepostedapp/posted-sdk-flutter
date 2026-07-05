@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import org.json.JSONObject
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -241,10 +240,14 @@ class PostedFlutterPlugin :
                 }
 
                 val prefs = appContext.getSharedPreferences("posted_sdk", Context.MODE_PRIVATE)
-                if (prefs.getBoolean("attributionResolved", false)) {
-                    result.success(loadCachedResult(prefs))
+                if (PostedAttributionCache.hasValidResolvedCache(prefs)) {
+                    result.success(PostedAttributionCache.load(prefs))
                     return
                 }
+                // A set flag without a matching schema version means a legacy
+                // or incompatible cache. Drop it and re-resolve rather than
+                // return stale data.
+                PostedAttributionCache.clear(prefs)
 
                 if (!isConfigured) {
                     val modeRaw = (args["linkProcessingMode"] as? String) ?: "all"
@@ -271,7 +274,7 @@ class PostedFlutterPlugin :
                         }
                         else -> {
                             val flutterMap = toFlutterMap(nativeResult)
-                            saveCachedResult(prefs, flutterMap)
+                            PostedAttributionCache.save(prefs, flutterMap)
                             result.success(flutterMap)
                         }
                     }
@@ -281,76 +284,11 @@ class PostedFlutterPlugin :
             "resetSession" -> {
                 val appContext = activity?.applicationContext
                 appContext?.getSharedPreferences("posted_sdk", Context.MODE_PRIVATE)
-                    ?.edit()
-                    ?.remove("attributionResolved")
-                    ?.remove("attributionHasLink")
-                    ?.remove("attributionLinkUrl")
-                    ?.remove("attributionLinkRoute")
-                    ?.remove("attributionLinkPathname")
-                    ?.remove("attributionLinkType")
-                    ?.remove("attributionLinkParams")
-                    ?.apply()
+                    ?.let { PostedAttributionCache.clear(it) }
                 result.success(null)
             }
 
             else -> result.notImplemented()
-        }
-    }
-
-    private fun saveCachedResult(prefs: android.content.SharedPreferences, map: Map<String, Any?>) {
-        val editor = prefs.edit()
-        editor.putBoolean("attributionResolved", true)
-        val link = map["link"] as? Map<*, *>
-        if (link != null) {
-            editor.putBoolean("attributionHasLink", true)
-            editor.putString("attributionLinkUrl", link["url"] as? String ?: "")
-            editor.putString("attributionLinkRoute", link["route"] as? String ?: "")
-            editor.putString("attributionLinkPathname", link["pathname"] as? String ?: "")
-            editor.putString("attributionLinkType", link["type"] as? String ?: "")
-            val params = link["params"]
-            val paramsJson = if (params is Map<*, *>) {
-                try {
-                    val jsonObj = JSONObject()
-                    params.forEach { (k, v) -> jsonObj.put(k.toString(), v ?: JSONObject.NULL) }
-                    jsonObj.toString()
-                } catch (e: Exception) {
-                    "{}"
-                }
-            } else {
-                "{}"
-            }
-            editor.putString("attributionLinkParams", paramsJson)
-        } else {
-            editor.putBoolean("attributionHasLink", false)
-        }
-        editor.apply()
-    }
-
-    private fun loadCachedResult(prefs: android.content.SharedPreferences): Map<String, Any?> {
-        val hasLink = prefs.getBoolean("attributionHasLink", false)
-        return if (hasLink) {
-            val paramsStr = prefs.getString("attributionLinkParams", "{}") ?: "{}"
-            val paramsMap: Map<String, Any> = try {
-                val json = JSONObject(paramsStr)
-                json.keys().asSequence().associate { k ->
-                    val v = json.get(k)
-                    k to (if (v == JSONObject.NULL) "" else v)
-                }
-            } catch (e: Exception) {
-                emptyMap()
-            }
-            mapOf(
-                "processed" to true,
-                "link" to mapOf(
-                    "url" to (prefs.getString("attributionLinkUrl", "") ?: ""),
-                    "route" to (prefs.getString("attributionLinkRoute", "") ?: ""),
-                    "pathname" to (prefs.getString("attributionLinkPathname", "") ?: ""),
-                    "type" to (prefs.getString("attributionLinkType", "deferred") ?: "deferred"),
-                    "params" to paramsMap,
-                ),
-            )
-        } else {
-            mapOf("processed" to true, "link" to null)
         }
     }
 

@@ -197,30 +197,27 @@ public class PostedFlutterPlugin: NSObject, FlutterPlugin, FlutterApplicationLif
             self.config = config
 
             let defaults = UserDefaults.standard
-            if defaults.bool(forKey: "posted_sdk_attributionResolved") {
-                result(loadCachedResult(from: defaults))
+            if PostedAttributionCache.hasValidResolvedCache(defaults) {
+                result(PostedAttributionCache.load(from: defaults))
                 return
             }
+            // A set flag without a matching schema version means a partial
+            // write or a legacy/incompatible cache. Drop it and re-resolve
+            // rather than short-circuit to stale/empty data.
+            PostedAttributionCache.clear(defaults)
 
             let launchOpts = self.launchOptions
             Task { @MainActor [weak self] in
                 guard let self = self else { return }
                 Detour.shared.resolveInitialLink(config: config, launchOptions: launchOpts) { r in
                     let map = self.detourResultToMap(r)
-                    self.saveCachedResult(map, to: UserDefaults.standard)
+                    PostedAttributionCache.save(map, to: UserDefaults.standard)
                     result(map)
                 }
             }
 
         case "resetSession":
-            let defaults = UserDefaults.standard
-            defaults.removeObject(forKey: "posted_sdk_attributionResolved")
-            defaults.removeObject(forKey: "posted_sdk_attributionHasLink")
-            defaults.removeObject(forKey: "posted_sdk_attributionLinkUrl")
-            defaults.removeObject(forKey: "posted_sdk_attributionLinkRoute")
-            defaults.removeObject(forKey: "posted_sdk_attributionLinkPathname")
-            defaults.removeObject(forKey: "posted_sdk_attributionLinkType")
-            defaults.removeObject(forKey: "posted_sdk_attributionLinkParams")
+            PostedAttributionCache.clear(UserDefaults.standard)
             result(nil)
 
         default:
@@ -229,47 +226,6 @@ public class PostedFlutterPlugin: NSObject, FlutterPlugin, FlutterApplicationLif
     }
 
     // MARK: - Helpers
-
-    private func saveCachedResult(_ map: [String: Any?], to defaults: UserDefaults) {
-        defaults.set(true, forKey: "posted_sdk_attributionResolved")
-        if let link = map["link"] as? [String: Any] {
-            defaults.set(true, forKey: "posted_sdk_attributionHasLink")
-            defaults.set(link["url"] as? String ?? "", forKey: "posted_sdk_attributionLinkUrl")
-            defaults.set(link["route"] as? String ?? "", forKey: "posted_sdk_attributionLinkRoute")
-            defaults.set(link["pathname"] as? String ?? "", forKey: "posted_sdk_attributionLinkPathname")
-            defaults.set(link["type"] as? String ?? "", forKey: "posted_sdk_attributionLinkType")
-            if let params = link["params"] as? [String: Any],
-               let paramsData = try? JSONSerialization.data(withJSONObject: params) {
-                defaults.set(paramsData, forKey: "posted_sdk_attributionLinkParams")
-            } else {
-                defaults.removeObject(forKey: "posted_sdk_attributionLinkParams")
-            }
-        } else {
-            defaults.set(false, forKey: "posted_sdk_attributionHasLink")
-        }
-    }
-
-    // Called only when posted_sdk_attributionResolved is set.
-    private func loadCachedResult(from defaults: UserDefaults) -> [String: Any?] {
-        let hasLink = defaults.bool(forKey: "posted_sdk_attributionHasLink")
-        guard hasLink else { return ["processed": true, "link": nil] }
-
-        var params: [String: Any] = [:]
-        if let paramsData = defaults.data(forKey: "posted_sdk_attributionLinkParams"),
-           let parsed = try? JSONSerialization.jsonObject(with: paramsData) as? [String: Any] {
-            params = parsed
-        }
-        return [
-            "processed": true,
-            "link": [
-                "url": defaults.string(forKey: "posted_sdk_attributionLinkUrl") ?? "",
-                "route": defaults.string(forKey: "posted_sdk_attributionLinkRoute") ?? "",
-                "pathname": defaults.string(forKey: "posted_sdk_attributionLinkPathname") ?? "",
-                "type": defaults.string(forKey: "posted_sdk_attributionLinkType") ?? "",
-                "params": params,
-            ] as [String: Any],
-        ]
-    }
 
     private func detourResultToMap(_ r: DetourResult) -> [String: Any?] {
         var map: [String: Any?] = ["processed": r.processed]
