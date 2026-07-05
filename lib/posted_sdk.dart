@@ -1,9 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import 'src/models.dart';
-import 'src/posted_service.dart';
 import 'posted_sdk_platform_interface.dart';
-import 'posted_sdk_method_channel.dart';
 
 export 'src/models.dart';
 export 'src/posted_service.dart';
