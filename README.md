@@ -302,9 +302,26 @@ A complete integration example covering deferred links, Universal/App Links, and
 
 ## Migration from `detour_flutter_plugin`
 
-`detour_flutter_plugin` v1.x has been superseded by `posted_sdk` v2.0.0. All `Detour*` names have `Posted*` equivalents available as deprecated typedef shims until v3.0 — existing code will compile with a deprecation warning without changes:
+`detour_flutter_plugin` v1.x has been superseded by `posted_sdk` v2.0.0. The 2.0.0 release is a pure rebrand — no behavioral or API-shape changes — so the upgrade is mechanical. See the [`CHANGELOG`](./CHANGELOG.md) for the full list of breaking changes.
 
-| v1 (deprecated) | v2 |
+### 1. Package name
+
+Update the dependency in your `pubspec.yaml` and your imports:
+
+```yaml
+dependencies:
+  posted_sdk: ^2.0.0   # was: detour_flutter_plugin
+```
+
+```dart
+import 'package:posted_sdk/posted_sdk.dart';   // was: package:detour_flutter_plugin/detour_flutter_plugin.dart
+```
+
+### 2. Public symbols
+
+All `Detour*` names have `Posted*` equivalents. The old names remain available as deprecated typedef/re-export shims for one minor cycle and are **removed in v3.0.0** — existing code compiles with a deprecation warning until then, so you can migrate incrementally:
+
+| v1 (deprecated, removed in 3.0.0) | v2 |
 | --- | --- |
 | `DetourService` | `PostedService` |
 | `DetourFlutterPlugin` | `PostedSdk` |
@@ -316,6 +333,17 @@ A complete integration example covering deferred links, Universal/App Links, and
 | `DetourEventName` | `PostedEventName` |
 | `LinkType` | `PostedLinkType` |
 | `LinkProcessingMode` | `PostedLinkProcessingMode` |
+
+### 3. Platform channels
+
+The underlying method and event channel names were renamed. This is internal to the plugin and requires no change for consumers of the Dart API, but is relevant if you have custom platform code, mocks, or tests that reference the channels directly:
+
+| v1 | v2 |
+| --- | --- |
+| method channel `detour_flutter_plugin` | `posted_sdk` |
+| event channel `detour_flutter_plugin/links` | `posted_sdk/links` |
+
+The native `pluginClass` (`PostedFlutterPlugin`), the Android package (`com.postedapp.posted`), and the Flutter marker class (`PostedFlutterMarker`) were also renamed as part of the rebrand; these are internal and do not affect Flutter app code.
 
 ---
 
