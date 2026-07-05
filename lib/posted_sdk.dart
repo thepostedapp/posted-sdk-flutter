@@ -10,6 +10,7 @@ export 'src/posted_service.dart';
 
 class PostedSdk {
   PostedResult? _cachedLaunchResult;
+  Future<PostedResult>? _inFlightResolution;
   PostedConfig? _config;
 
   Future<void> configure(PostedConfig config) {
@@ -23,20 +24,49 @@ class PostedSdk {
   /// the same session return the cached result immediately. The native layer
   /// persists the fire-once flag and cached result across app updates; only a
   /// reinstall or [resetSession] call re-arms it.
+  ///
+  /// In-flight single-flight de-dup: if several callers invoke this method
+  /// concurrently on first launch — before the resolution has completed and the
+  /// fire-once cache is populated — they all await the *same* in-flight
+  /// resolution, so exactly one platform/network call is made and every caller
+  /// receives an identical result.
   Future<PostedResult> resolveAppLaunch(PostedConfig config) async {
     _config = config;
-    if (_cachedLaunchResult != null) {
-      return _cachedLaunchResult!;
+    // Fire-once cache: subsequent calls in-session return the cached result.
+    final cached = _cachedLaunchResult;
+    if (cached != null) {
+      return cached;
     }
-    final result = await PostedSdkPlatform.instance.resolveAppLaunch(config);
-    _cachedLaunchResult = result;
-    return result;
+    // Single-flight de-dup: reuse an already-running resolution. The check and
+    // the store below run with no `await` between them, so racing callers
+    // cannot both pass the null-check and start a second resolution.
+    final inFlight = _inFlightResolution;
+    if (inFlight != null) {
+      return inFlight;
+    }
+    final resolution = _resolveOnce(config);
+    _inFlightResolution = resolution;
+    return resolution;
+  }
+
+  /// Performs a single resolution, populating the fire-once cache on success and
+  /// always clearing the in-flight handle so a failed resolution re-arms rather
+  /// than being cached permanently.
+  Future<PostedResult> _resolveOnce(PostedConfig config) async {
+    try {
+      final result = await PostedSdkPlatform.instance.resolveAppLaunch(config);
+      _cachedLaunchResult = result;
+      return result;
+    } finally {
+      _inFlightResolution = null;
+    }
   }
 
   /// Re-arms fire-once: clears the Dart-session cache and calls native
   /// resetSession so the next [resolveAppLaunch] performs a fresh resolution.
   Future<void> resetSession() async {
     _cachedLaunchResult = null;
+    _inFlightResolution = null;
     await PostedSdkPlatform.instance.resetSession();
   }
 

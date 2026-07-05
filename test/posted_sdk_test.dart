@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:posted_sdk/posted_sdk.dart';
 import 'package:posted_sdk/posted_sdk_method_channel.dart';
 import 'package:posted_sdk/posted_sdk_platform_interface.dart';
@@ -38,6 +40,14 @@ class MockPostedSdkPlatform
   );
   bool resetSessionCalled = false;
 
+  /// When set, [resolveAppLaunch] blocks on this gate before completing, so a
+  /// test can hold a resolution "in flight" while it fires concurrent callers.
+  Completer<void>? resolveAppLaunchGate;
+
+  /// When set, [resolveAppLaunch] throws this after incrementing the call
+  /// counter, letting a test exercise the failed-resolution path.
+  Object? resolveAppLaunchError;
+
   @override
   Future<void> configure(PostedConfig config) async {
     configuredWith = config;
@@ -75,6 +85,12 @@ class MockPostedSdkPlatform
   @override
   Future<PostedResult> resolveAppLaunch(PostedConfig config) async {
     resolveAppLaunchCalls++;
+    if (resolveAppLaunchGate != null) {
+      await resolveAppLaunchGate!.future;
+    }
+    if (resolveAppLaunchError != null) {
+      throw resolveAppLaunchError!;
+    }
     return resolveAppLaunchResult;
   }
 
@@ -167,6 +183,60 @@ void main() {
       expect(identical(first, second), true);
     },
   );
+
+  test('concurrent first-launch calls produce exactly one platform call and '
+      'identical results', () async {
+    final plugin = PostedSdk();
+    final fakePlatform = MockPostedSdkPlatform();
+    fakePlatform.resolveAppLaunchResult = _linkResult(
+      '/promo?campaign=spring',
+      PostedLinkType.verified,
+    );
+    // Hold the resolution in flight so both callers race the fire-once cache.
+    final gate = Completer<void>();
+    fakePlatform.resolveAppLaunchGate = gate;
+    PostedSdkPlatform.instance = fakePlatform;
+
+    // Fire two callers concurrently before the first resolution completes.
+    final first = plugin.resolveAppLaunch(_config);
+    final second = plugin.resolveAppLaunch(_config);
+
+    // Let both callers reach their await points before releasing the gate.
+    await Future<void>.delayed(Duration.zero);
+
+    gate.complete();
+    final results = await Future.wait([first, second]);
+
+    // Single-flight: exactly one platform/network call, identical results.
+    expect(fakePlatform.resolveAppLaunchCalls, 1);
+    expect(identical(results[0], results[1]), true);
+    expect(results[0].link?.route, '/promo?campaign=spring');
+  });
+
+  test('failed first-launch resolution clears in-flight handle so a retry '
+      're-resolves', () async {
+    final plugin = PostedSdk();
+    final fakePlatform = MockPostedSdkPlatform();
+    fakePlatform.resolveAppLaunchError = Exception('network down');
+    PostedSdkPlatform.instance = fakePlatform;
+
+    await expectLater(
+      plugin.resolveAppLaunch(_config),
+      throwsA(isA<Exception>()),
+    );
+    expect(fakePlatform.resolveAppLaunchCalls, 1);
+
+    // In-flight handle must be cleared (not cached) so the next call retries.
+    fakePlatform.resolveAppLaunchError = null;
+    fakePlatform.resolveAppLaunchResult = _linkResult(
+      '/campaign',
+      PostedLinkType.verified,
+    );
+    final result = await plugin.resolveAppLaunch(_config);
+
+    expect(fakePlatform.resolveAppLaunchCalls, 2);
+    expect(result.link?.route, '/campaign');
+  });
 
   test('resetSession clears Dart cache and re-arms platform', () async {
     final plugin = PostedSdk();
