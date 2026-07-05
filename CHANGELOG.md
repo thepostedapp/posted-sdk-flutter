@@ -1,3 +1,7 @@
+## 3.0.0
+
+* **Breaking:** Removed the deprecated `Detour*` type-alias / re-export shims and the un-prefixed `LinkType` / `LinkProcessingMode` aliases introduced in 2.0.0. These lived for one minor cycle; code must now use the `Posted*` names (`PostedSdk`, `PostedService`, `PostedConfig`, `PostedResult`, `PostedLink`, `PostedIntent`, `PostedIntentSource`, `PostedEventName`, `PostedLinkType`, `PostedLinkProcessingMode`, `PostedSdkPlatform`, `MethodChannelPostedSdk`). See the migration table in the README.
+
 ## 2.0.0
 
 * **Breaking:** Package renamed from `detour_flutter_plugin` to `posted_sdk`.

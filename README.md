@@ -319,9 +319,9 @@ import 'package:posted_sdk/posted_sdk.dart';   // was: package:detour_flutter_pl
 
 ### 2. Public symbols
 
-All `Detour*` names have `Posted*` equivalents. The old names remain available as deprecated typedef/re-export shims for one minor cycle and are **removed in v3.0.0** — existing code compiles with a deprecation warning until then, so you can migrate incrementally:
+All `Detour*` names have `Posted*` equivalents. The old names were available as deprecated typedef/re-export shims throughout the 2.x line and are **removed as of v3.0.0** — code must now use the `Posted*` names. If you are upgrading straight from v1.x, rename using the table below:
 
-| v1 (deprecated, removed in 3.0.0) | v2 |
+| v1 name (removed in v3.0.0) | Current (`Posted*`) |
 | --- | --- |
 | `DetourService` | `PostedService` |
 | `DetourFlutterPlugin` | `PostedSdk` |
