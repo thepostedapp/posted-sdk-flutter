@@ -24,8 +24,9 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
-	<!-- Optional: custom scheme links (works with LinkProcessingMode.all). -->
-	<!-- Replace `posted-sdk-example` with your app-specific scheme. -->
+	<!-- Custom scheme links (works with LinkProcessingMode.all). -->
+	<!-- `posted` is the Posted SDK example scheme; replace with your
+	     app-specific scheme in your own app. -->
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -35,7 +36,7 @@
 			<string>com.example.postedSdkExample</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>posted-sdk-example</string>
+				<string>posted</string>
 			</array>
 		</dict>
 	</array>

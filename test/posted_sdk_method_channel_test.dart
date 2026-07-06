@@ -109,13 +109,13 @@ void main() {
 
   test('processLink sends url without mutation', () async {
     final result = await platform.processLink(
-      'https://godetour.dev/u/launch?campaign=spring',
+      'https://posted.link/u/launch?campaign=spring',
     );
 
     expect(calls, hasLength(1));
     expect(calls.first.method, 'processLink');
     expect(calls.first.arguments, {
-      'url': 'https://godetour.dev/u/launch?campaign=spring',
+      'url': 'https://posted.link/u/launch?campaign=spring',
     });
     expect(result.processed, true);
     expect(result.link, isNull);

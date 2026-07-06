@@ -10,7 +10,7 @@ Add the package to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  posted_sdk: ^2.0.0
+  posted_sdk: ^3.0.0
 ```
 
 Then run `flutter pub get`.
@@ -310,7 +310,7 @@ Update the dependency in your `pubspec.yaml` and your imports:
 
 ```yaml
 dependencies:
-  posted_sdk: ^2.0.0   # was: detour_flutter_plugin
+  posted_sdk: ^3.0.0   # was: detour_flutter_plugin
 ```
 
 ```dart

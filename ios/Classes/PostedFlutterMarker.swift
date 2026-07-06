@@ -11,5 +11,5 @@ import Foundation
 // in the host app bundle, so bundle-based version lookup would read the app version.
 @objc(PostedFlutterMarker)
 public final class PostedFlutterMarker: NSObject {
-    @objc public static let sdkHeaderValue = "flutter/2.0.0"
+    @objc public static let sdkHeaderValue = "flutter/3.0.0"
 }
