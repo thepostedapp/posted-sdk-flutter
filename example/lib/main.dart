@@ -103,7 +103,7 @@ class _MyAppState extends State<MyApp> {
     try {
       final result = await _postedService.processLink(
         // Use a test URL that matches your posted-sdk dashboard setup for testing.
-        'https://godetour.link/abc123?campaign=test',
+        'https://posted.link/abc123?campaign=test',
       );
       if (!mounted) return;
       setState(() => _processedResult = result);

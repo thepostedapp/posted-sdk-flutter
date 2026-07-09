@@ -24,13 +24,14 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Optional: custom scheme links (works with LinkProcessingMode.all). -->
-            <!-- Replace `detour-flutter-example` with your app-specific scheme. -->
+            <!-- Custom scheme links (works with LinkProcessingMode.all). -->
+            <!-- `posted` is the Posted SDK example scheme; replace with your
+                 app-specific scheme in your own app. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="detour-flutter-example" />
+                <data android:scheme="posted" />
             </intent-filter>
             <!-- PASTE YOUR DASHBOARD LINK CONFIGURATION HERE -->
         </activity>
