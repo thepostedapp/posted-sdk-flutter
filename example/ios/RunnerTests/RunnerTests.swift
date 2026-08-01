@@ -99,6 +99,18 @@ class PostedAttributionCacheTests: XCTestCase {
     }
   }
 
+  func testTornClear_onlyKeyResolvedRemoved_isInvalid() {
+    // Simulate a clear() interrupted after its first removeObject: only
+    // keyResolved (first in allKeys) is gone, keyVersion and the rest of the
+    // blob still linger. hasValidResolvedCache must report false because it
+    // gates on keyResolved first, regardless of what else remains.
+    PostedAttributionCache.save(linkResult(), to: defaults)
+    defaults.removeObject(forKey: PostedAttributionCache.keyResolved)
+
+    XCTAssertFalse(PostedAttributionCache.hasValidResolvedCache(defaults))
+    XCTAssertEqual(defaults.integer(forKey: PostedAttributionCache.keyVersion), PostedAttributionCache.version)
+  }
+
   func testNoLinkRoundTrips() {
     PostedAttributionCache.save(["processed": true, "link": nil], to: defaults)
 
