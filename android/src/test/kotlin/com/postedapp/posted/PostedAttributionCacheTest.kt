@@ -14,9 +14,11 @@ import kotlin.test.assertTrue
  * Uses a hand-rolled in-memory [SharedPreferences] so the logic runs on a
  * plain JVM without Robolectric or a device. The params-JSON encode/decode
  * path routes through `org.json.JSONObject`, which is a throwing stub under
- * plain JVM unit tests, so these tests exercise the `link == null` path; the
- * params-JSON round trip is covered by the iOS `PostedAttributionCacheTests`
- * suite (via `JSONSerialization`).
+ * plain JVM unit tests, so most of these tests exercise the `link == null`
+ * path; the params-JSON *round trip* is covered by the iOS
+ * `PostedAttributionCacheTests` suite (via `JSONSerialization`) instead. The
+ * stub's unconditional throw is put to use below to cover the *encode-failure*
+ * path, which is otherwise unreachable on a plain JVM.
  */
 internal class PostedAttributionCacheTest {
 
@@ -85,6 +87,35 @@ internal class PostedAttributionCacheTest {
             .apply()
 
         assertFalse(PostedAttributionCache.hasValidResolvedCache(prefs))
+    }
+
+    @Test
+    fun save_degradesParamsButKeepsRestOfBlobValid_whenParamsEncodeFails() {
+        // org.json.JSONObject is a throwing stub under plain JVM unit tests
+        // (see class doc), so any non-empty params map exercises the
+        // encode-failure branch here.
+        val prefs = FakeSharedPreferences()
+        PostedAttributionCache.debugParamsEncodeFailureCount = 0
+        PostedAttributionCache.save(
+            prefs,
+            mapOf(
+                "processed" to true,
+                "link" to mapOf(
+                    "url" to "https://ex.co/a",
+                    "route" to "/a",
+                    "pathname" to "a",
+                    "type" to "deferred",
+                    "params" to mapOf("k" to "v"),
+                ),
+            ),
+        )
+
+        assertTrue(PostedAttributionCache.hasValidResolvedCache(prefs))
+        assertEquals(1, PostedAttributionCache.debugParamsEncodeFailureCount)
+
+        val link = PostedAttributionCache.load(prefs)["link"] as Map<*, *>
+        assertEquals("https://ex.co/a", link["url"])
+        assertEquals(emptyMap<String, Any>(), link["params"])
     }
 
     @Test
