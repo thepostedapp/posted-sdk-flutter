@@ -31,6 +31,18 @@ object PostedAttributionCache {
     const val KEY_PARAMS = "attributionLinkParams"
 
     /**
+     * Debug/test-only observability: incremented each time [save] fails to
+     * JSON-encode `params`. The rest of the link blob and the resolved flag
+     * are still persisted (params degrade to an empty map on load) rather
+     * than dropping the whole cache — params that fail to encode once will
+     * fail identically on every future launch, so invalidating the cache
+     * would turn a one-off encoding gap into a permanent re-resolve loop.
+     * Not part of the public SDK contract.
+     */
+    var debugParamsEncodeFailureCount = 0
+        internal set
+
+    /**
      * `true` only when a resolved result with a matching schema version is
      * cached. A set flag without a matching version (legacy/incompatible
      * cache) reports `false` so the caller re-resolves.
@@ -60,6 +72,13 @@ object PostedAttributionCache {
                     params.forEach { (k, v) -> jsonObj.put(k.toString(), v ?: JSONObject.NULL) }
                     jsonObj.toString()
                 } catch (e: Exception) {
+                    debugParamsEncodeFailureCount++
+                    if (BuildConfig.DEBUG) {
+                        println(
+                            "posted-sdk: attribution cache params failed to JSON-encode; " +
+                                "degrading to empty params.",
+                        )
+                    }
                     "{}"
                 }
             } else {

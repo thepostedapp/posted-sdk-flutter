@@ -32,6 +32,15 @@ enum PostedAttributionCache {
         keyUrl, keyRoute, keyPathname, keyType, keyParams,
     ]
 
+    /// Debug/test-only observability: incremented each time `save` fails to
+    /// JSON-encode `params`. The rest of the link blob and the resolved flag
+    /// are still persisted (params degrade to an empty map on load) rather
+    /// than dropping the whole cache — params that fail to encode once will
+    /// fail identically on every future launch, so invalidating the cache
+    /// would turn a one-off encoding gap into a permanent re-resolve loop.
+    /// Not part of the public SDK contract.
+    static var debugParamsEncodeFailureCount = 0
+
     /// `true` only when a fully-persisted, version-matched result is cached.
     /// A set flag without a matching version (partial write or legacy cache)
     /// reports `false` so the caller re-resolves.
@@ -55,6 +64,12 @@ enum PostedAttributionCache {
                 defaults.set(paramsData, forKey: keyParams)
             } else {
                 defaults.removeObject(forKey: keyParams)
+                if link["params"] != nil {
+                    debugParamsEncodeFailureCount += 1
+                    #if DEBUG
+                    print("posted-sdk: attribution cache params failed to JSON-encode; degrading to empty params.")
+                    #endif
+                }
             }
         } else {
             defaults.set(false, forKey: keyHasLink)

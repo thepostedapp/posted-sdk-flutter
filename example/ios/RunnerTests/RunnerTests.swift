@@ -106,4 +106,15 @@ class PostedAttributionCacheTests: XCTestCase {
     let loaded = PostedAttributionCache.load(from: defaults)
     XCTAssertNil(loaded["link"] ?? nil)
   }
+
+  // NOTE: a genuine params-encode failure (e.g. NaN, Date, or another value
+  // JSONSerialization can't represent) is not exercised here. On this
+  // Foundation, JSONSerialization.data(withJSONObject:) raises an *uncaught*
+  // NSException for such values instead of returning a catchable Swift
+  // error, so `try?` never actually observes the failure — it would crash
+  // the process (verified locally; see POS-272 discovery comment). The
+  // fallback branch below the `try?` is therefore effectively unreachable in
+  // practice; the reachable, safely-testable side of the encode-failure
+  // contract is covered on Android instead, where org.json genuinely throws
+  // a catchable exception.
 }
