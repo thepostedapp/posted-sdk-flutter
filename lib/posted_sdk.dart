@@ -11,6 +11,15 @@ class PostedSdk {
   Future<PostedResult>? _inFlightResolution;
   PostedConfig? _config;
 
+  /// Debug/test-only observability: incremented each time a caller reuses an
+  /// in-flight resolution instead of starting a new one. Lets a regression
+  /// that reintroduces a second platform call surface as a test failure
+  /// instead of failing silently. Cross-platform parity with iOS's
+  /// `PostedLogger.debug` "de-dup, awaiting in-flight resolution" signal
+  /// (POS-246). Not part of the public SDK contract.
+  @visibleForTesting
+  int debugCoalescedResolutionCount = 0;
+
   Future<void> configure(PostedConfig config) {
     _config = config;
     return PostedSdkPlatform.instance.configure(config);
@@ -40,6 +49,13 @@ class PostedSdk {
     // cannot both pass the null-check and start a second resolution.
     final inFlight = _inFlightResolution;
     if (inFlight != null) {
+      if (kDebugMode) {
+        debugCoalescedResolutionCount++;
+        debugPrint(
+          'posted-sdk: resolveAppLaunch de-dup — awaiting in-flight '
+          'resolution instead of starting a new one.',
+        );
+      }
       return inFlight;
     }
     final resolution = _resolveOnce(config);

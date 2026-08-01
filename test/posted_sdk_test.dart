@@ -213,6 +213,34 @@ void main() {
     expect(results[0].link?.route, '/promo?campaign=spring');
   });
 
+  test(
+    'coalesced caller increments the debug-only observability counter',
+    () async {
+      final plugin = PostedSdk();
+      final fakePlatform = MockPostedSdkPlatform();
+      final gate = Completer<void>();
+      fakePlatform.resolveAppLaunchGate = gate;
+      PostedSdkPlatform.instance = fakePlatform;
+
+      expect(plugin.debugCoalescedResolutionCount, 0);
+
+      // Fire two callers concurrently before the first resolution completes.
+      final first = plugin.resolveAppLaunch(_config);
+      final second = plugin.resolveAppLaunch(_config);
+      await Future<void>.delayed(Duration.zero);
+
+      // Only the second, coalesced caller bumps the counter.
+      expect(plugin.debugCoalescedResolutionCount, 1);
+
+      gate.complete();
+      await Future.wait([first, second]);
+
+      // A later, non-overlapping call hits the fire-once cache, not de-dup.
+      await plugin.resolveAppLaunch(_config);
+      expect(plugin.debugCoalescedResolutionCount, 1);
+    },
+  );
+
   test('failed first-launch resolution clears in-flight handle so a retry '
       're-resolves', () async {
     final plugin = PostedSdk();
