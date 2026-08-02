@@ -135,6 +135,11 @@ class PostedLink {
   }
 }
 
+/// The canonical continuous-event payload emitted by [PostedSdk.linkStream].
+///
+/// [link] — when non-null — always carries the fully parsed [PostedLink]
+/// (`url`/`route`/`pathname`/`params`/`type`); it is null only when the event
+/// has nothing attributable (e.g. a plain app open).
 class PostedResult {
   final bool processed;
   final PostedLink? link;
