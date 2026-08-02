@@ -132,6 +132,12 @@ class PostedSdk {
     return PostedSdkPlatform.instance.processLink(url);
   }
 
+  /// Canonical continuous-event payload: emits a [PostedResult] for every
+  /// runtime link event, with [PostedResult.link] — when non-null — carrying
+  /// the fully parsed [PostedLink] (`url`/`route`/`pathname`/`params`/`type`).
+  /// `link` is null only when the event has nothing attributable (e.g. a
+  /// plain app open). This is the reference shape for continuous deep-link
+  /// delivery across Detour's platform SDKs.
   Stream<PostedResult> get linkStream => PostedSdkPlatform.instance.linkStream;
 
   Future<void> logEvent(

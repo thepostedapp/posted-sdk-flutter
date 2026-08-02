@@ -114,6 +114,15 @@ final initial = await sdk.resolveAppLaunch(
 final stream = sdk.linkStream;
 ```
 
+`linkStream` is the SDK's **canonical continuous-event payload**: every event it emits is a
+`PostedResult { bool processed; PostedLink? link }`, where `link` — when present — always carries
+the fully parsed `url`, `route`, `pathname`, `params`, and `type`. `link` is `null` only when the
+event has nothing attributable (e.g. a plain app open). This is the reference shape for continuous
+deep-link delivery across Detour's platform SDKs; React Native's continuous-event stream hoists the
+same parsed link fields (plus a top-level `url`) onto its event payload rather than nesting a
+`PostedLink`, which is a platform-idiomatic wrapper difference, not a divergence in the underlying
+data.
+
 </details>
 
 ### Link processing mode
@@ -294,7 +303,7 @@ Low-level bridge API:
 - `Future<void> configure(PostedConfig config)` — sets config without resolving; use when you need to call deprecated shims
 - `Future<PostedResult> resolveInitialLink()` *(deprecated — use `resolveAppLaunch(config)` instead; requires `configure()` to be called first or throws `StateError`)*
 - `Future<PostedResult> processLink(String url)` *(deprecated — use `resolveAppLaunch(config)` instead)*
-- `Stream<PostedResult> get linkStream`
+- `Stream<PostedResult> get linkStream` — canonical continuous-event payload; every emitted `PostedResult.link` (when non-null) carries the fully parsed `PostedLink` (`url`/`route`/`pathname`/`params`/`type`)
 - `Future<void> resetSession()` — re-arms fire-once for the next `resolveAppLaunch` call
 - `Future<void> logEvent(PostedEventName eventName, {Map<String, dynamic>? data})`
 - `Future<void> logRetention(String eventName)`
