@@ -560,5 +560,35 @@ void main() {
       );
       expect(notices.length, 2);
     });
+
+    test('resolveInitialLink() and processLink() warnings match the canonical '
+        'cross-platform template (POS-496/POS-536): "[Posted] <method>() is '
+        'deprecated and will be removed in 4.0.0. Use resolveAppLaunch() '
+        'instead."', () async {
+      final plugin = PostedSdk();
+      final fakePlatform = MockPostedSdkPlatform();
+      PostedSdkPlatform.instance = fakePlatform;
+      await plugin.configure(_config);
+
+      // ignore: deprecated_member_use
+      await plugin.resolveInitialLink();
+      // ignore: deprecated_member_use
+      await plugin.processLink('https://example.com/a');
+
+      expect(
+        captured,
+        contains(
+          '[Posted] resolveInitialLink() is deprecated and will be '
+          'removed in 4.0.0. Use resolveAppLaunch() instead.',
+        ),
+      );
+      expect(
+        captured,
+        contains(
+          '[Posted] processLink() is deprecated and will be removed in '
+          '4.0.0. Use resolveAppLaunch() instead.',
+        ),
+      );
+    });
   });
 }
