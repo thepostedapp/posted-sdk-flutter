@@ -6,6 +6,26 @@ import 'posted_sdk_platform_interface.dart';
 export 'src/models.dart';
 export 'src/posted_service.dart';
 
+/// Methods whose deprecation notice has already fired this session. Shared
+/// across all [PostedSdk] instances, mirroring the RN `deprecatedShims.ts`
+/// module-level de-dup (POS-177).
+final Set<String> _warnedDeprecations = <String>{};
+
+/// Prints [message] via [debugPrint] at most once per session for a given
+/// [method] key.
+void _warnOnce(String method, String message) {
+  if (_warnedDeprecations.add(method)) {
+    debugPrint(message);
+  }
+}
+
+/// Test-only re-arm hook: clears the once-per-session de-dup state so a test
+/// can re-exercise a deprecation warning. Not part of the public plugin API.
+@visibleForTesting
+void resetDeprecationWarningsForTest() {
+  _warnedDeprecations.clear();
+}
+
 class PostedSdk {
   PostedResult? _cachedLaunchResult;
   Future<PostedResult>? _inFlightResolution;
@@ -107,9 +127,10 @@ class PostedSdk {
     'removed in the next major release.',
   )
   Future<PostedResult> resolveInitialLink() {
-    debugPrint(
+    _warnOnce(
+      'resolveInitialLink',
       'posted-sdk: resolveInitialLink() is deprecated. '
-      'Use resolveAppLaunch(config) instead.',
+          'Use resolveAppLaunch(config) instead.',
     );
     if (_config == null) {
       throw StateError(
@@ -125,9 +146,10 @@ class PostedSdk {
     'removed in the next major release.',
   )
   Future<PostedResult> processLink(String url) {
-    debugPrint(
+    _warnOnce(
+      'processLink',
       'posted-sdk: processLink() is deprecated. '
-      'Use resolveAppLaunch(config) instead.',
+          'Use resolveAppLaunch(config) instead.',
     );
     return PostedSdkPlatform.instance.processLink(url);
   }
