@@ -468,6 +468,11 @@ void main() {
       debugPrint = (String? message, {int? wrapWidth}) {
         captured.add(message);
       };
+      // Earlier tests in this file (e.g. the fire-once/cache-sharing tests
+      // above) also call resolveInitialLink()/processLink(), which populate
+      // the module-level _warnedDeprecations set. Reset it here so each test
+      // in this group starts from a clean, unwarned state.
+      resetDeprecationWarningsForTest();
     });
 
     tearDown(() {
