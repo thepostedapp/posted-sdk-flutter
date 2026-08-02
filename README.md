@@ -311,6 +311,11 @@ Previously, cold-start attribution required a `configure()` call followed by `re
 configures the SDK and resolves the launch attribution in one step. `PostedService.start(config)`
 already gives you this and needs no changes.
 
+| Old (2.x)                    | New (3.0)                    | Notes                                     |
+| ----------------------------- | ----------------------------- | ------------------------------------------ |
+| `configure(config)` + `resolveInitialLink()` | `resolveAppLaunch(config)` | Single call; no separate `configure()` needed. See [§1](#1-resolveinitiallink--resolveapplaunchconfig). |
+| `processLink(String url)` *(on `PostedSdk`)* | `resolveAppLaunch(config)` | Deprecated for cold-start attribution only; `PostedService.processLink(url)` is unaffected. See [§2](#2-processlinkstring-url-is-deprecated). |
+
 ### 1. `resolveInitialLink()` → `resolveAppLaunch(config)`
 
 ```dart
