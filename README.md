@@ -2,6 +2,9 @@
 
 Flutter plugin for mobile attribution and deferred deep linking. `posted_sdk` wraps the native Detour SDKs for Android and iOS, giving Flutter apps access to deferred deep links that survive the Play Store or App Store install flow, along with Universal/App Links and custom scheme links in a single unified API.
 
+Upgrading from an earlier version? See [Migrating from 2.x to 3.0](#migrating-from-2x-to-30) or
+[Migration from `detour_flutter_plugin`](#migration-from-detour_flutter_plugin).
+
 ## Installation
 
 ### Package
@@ -299,6 +302,53 @@ Low-level bridge API:
 ## Example
 
 A complete integration example covering deferred links, Universal/App Links, and custom scheme links is in [`example/`](./example). See the [example setup guide](./example/README.md) for step-by-step instructions.
+
+## Migrating from 2.x to 3.0
+
+`posted_sdk` 3.0.0 reshapes the public API around a single **attribution-first** entry point.
+Previously, cold-start attribution required a `configure()` call followed by `resolveInitialLink()`
+(or the runtime-only `processLink(url)`); now a single `resolveAppLaunch(config)` call on `PostedSdk`
+configures the SDK and resolves the launch attribution in one step. `PostedService.start(config)`
+already gives you this and needs no changes.
+
+### 1. `resolveInitialLink()` → `resolveAppLaunch(config)`
+
+```dart
+// Before (deprecated)
+await sdk.configure(config);
+final result = await sdk.resolveInitialLink();
+
+// After
+final result = await sdk.resolveAppLaunch(config);
+```
+
+`resolveAppLaunch` takes `config` directly — no separate `configure()` call is needed first.
+
+### 2. `processLink(String url)` is deprecated
+
+`PostedSdk.processLink(url)` is deprecated in 3.0.0; use `resolveAppLaunch(config)` for cold-start
+attribution instead. This does **not** affect `PostedService.processLink(url)`, which remains fully
+supported for handling an arbitrary runtime URL (for example a custom scheme link caught while the
+app is already running) — that is a distinct use case from cold-start attribution.
+
+Both `resolveInitialLink()` and `processLink()` are kept as deprecated shims for **one release
+cycle** and will be **removed in 4.0** (the next major release).
+
+### 3. No separate `launchContext` parameter on Flutter
+
+Unlike the iOS and Android SDKs, `resolveAppLaunch(config)` on Flutter has no separate
+`launchContext` parameter to pass. There is no Dart-side equivalent of native
+`AppDelegate`/`SceneDelegate` launch options — the native layer resolves the launch context
+internally, so `resolveAppLaunch(config)` is the complete call.
+
+### 4. Fire-once semantics
+
+`resolveAppLaunch` caches its result after the first successful call: the native layer persists the
+fire-once flag and the cached result, so the result **survives app updates** — every call after the
+first returns the same cached `PostedResult` for a given install. Only a **reinstall**, or an
+explicit call to `resetSession()`, re-arms it for a fresh resolution.
+
+---
 
 ## Migration from `detour_flutter_plugin`
 
