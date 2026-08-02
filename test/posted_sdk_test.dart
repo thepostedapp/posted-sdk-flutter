@@ -4,6 +4,7 @@ import 'package:posted_sdk/posted_sdk.dart';
 import 'package:posted_sdk/posted_sdk_method_channel.dart';
 import 'package:posted_sdk/posted_sdk_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _config = PostedConfig(
@@ -454,4 +455,110 @@ void main() {
       expect(fakePlatform.lastProcessLinkUrl, 'https://example.com/promo');
     },
   );
+
+  // ── Deprecation-warning once-per-session de-dup (POS-518, RN parity POS-177) ──
+
+  group('deprecation-warning once-per-session de-dup', () {
+    late List<String?> captured;
+    late DebugPrintCallback originalDebugPrint;
+
+    setUp(() {
+      captured = <String?>[];
+      originalDebugPrint = debugPrint;
+      debugPrint = (String? message, {int? wrapWidth}) {
+        captured.add(message);
+      };
+      // Earlier tests in this file (e.g. the fire-once/cache-sharing tests
+      // above) also call resolveInitialLink()/processLink(), which populate
+      // the module-level _warnedDeprecations set. Reset it here so each test
+      // in this group starts from a clean, unwarned state.
+      resetDeprecationWarningsForTest();
+    });
+
+    tearDown(() {
+      debugPrint = originalDebugPrint;
+      resetDeprecationWarningsForTest();
+    });
+
+    test('resolveInitialLink() prints its deprecation notice only on the first '
+        'call', () async {
+      final plugin = PostedSdk();
+      final fakePlatform = MockPostedSdkPlatform();
+      PostedSdkPlatform.instance = fakePlatform;
+      await plugin.configure(_config);
+
+      // ignore: deprecated_member_use
+      await plugin.resolveInitialLink();
+      // ignore: deprecated_member_use
+      await plugin.resolveInitialLink();
+
+      final notices = captured.where(
+        (m) => m != null && m.contains('resolveInitialLink() is deprecated'),
+      );
+      expect(notices.length, 1);
+    });
+
+    test(
+      'processLink() prints its deprecation notice only on the first call',
+      () async {
+        final plugin = PostedSdk();
+        final fakePlatform = MockPostedSdkPlatform();
+        PostedSdkPlatform.instance = fakePlatform;
+
+        // ignore: deprecated_member_use
+        await plugin.processLink('https://example.com/a');
+        // ignore: deprecated_member_use
+        await plugin.processLink('https://example.com/b');
+
+        final notices = captured.where(
+          (m) => m != null && m.contains('processLink() is deprecated'),
+        );
+        expect(notices.length, 1);
+      },
+    );
+
+    test('resolveInitialLink() and processLink() warnings are de-duped '
+        'independently per method', () async {
+      final plugin = PostedSdk();
+      final fakePlatform = MockPostedSdkPlatform();
+      PostedSdkPlatform.instance = fakePlatform;
+      await plugin.configure(_config);
+
+      // ignore: deprecated_member_use
+      await plugin.resolveInitialLink();
+      // ignore: deprecated_member_use
+      await plugin.processLink('https://example.com/a');
+      // ignore: deprecated_member_use
+      await plugin.resolveInitialLink();
+      // ignore: deprecated_member_use
+      await plugin.processLink('https://example.com/b');
+
+      final initialLinkNotices = captured.where(
+        (m) => m != null && m.contains('resolveInitialLink() is deprecated'),
+      );
+      final processLinkNotices = captured.where(
+        (m) => m != null && m.contains('processLink() is deprecated'),
+      );
+      expect(initialLinkNotices.length, 1);
+      expect(processLinkNotices.length, 1);
+    });
+
+    test('resetDeprecationWarningsForTest() re-arms the warning for a fresh '
+        'occurrence', () async {
+      final plugin = PostedSdk();
+      final fakePlatform = MockPostedSdkPlatform();
+      PostedSdkPlatform.instance = fakePlatform;
+
+      // ignore: deprecated_member_use
+      await plugin.processLink('https://example.com/a');
+      resetDeprecationWarningsForTest();
+      // ignore: deprecated_member_use
+      await plugin.processLink('https://example.com/b');
+
+      final notices = captured.where(
+        (m) => m != null && m.contains('processLink() is deprecated'),
+      );
+      expect(notices.length, 2);
+    });
+  });
 }
