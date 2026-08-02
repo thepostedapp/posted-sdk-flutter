@@ -138,6 +138,11 @@ class PostedSdk {
   /// `link` is null only when the event has nothing attributable (e.g. a
   /// plain app open). This is the reference shape for continuous deep-link
   /// delivery across Detour's platform SDKs.
+  ///
+  /// See POS-503 for the cross-platform canonical continuous-event contract,
+  /// POS-504 for the React Native child (the platform that hoists `url`
+  /// instead of nesting [PostedLink]), and POS-502 for the cross-platform
+  /// consistency matrix.
   Stream<PostedResult> get linkStream => PostedSdkPlatform.instance.linkStream;
 
   Future<void> logEvent(

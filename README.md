@@ -123,6 +123,10 @@ same parsed link fields (plus a top-level `url`) onto its event payload rather t
 `PostedLink`, which is a platform-idiomatic wrapper difference, not a divergence in the underlying
 data.
 
+See POS-503 for the cross-platform canonical continuous-event contract, POS-504 for the React
+Native child issue that hoists `url` onto the payload, and POS-502 for the cross-platform
+consistency matrix.
+
 </details>
 
 ### Link processing mode
