@@ -321,60 +321,49 @@ void main() {
     expect(identical(rearmed, first), false);
   });
 
-  test(
-    'resetSession during an in-flight resolve is honored on the next '
-    'resolve: the in-flight call is allowed to complete and cache its '
-    'stale result, but the following resolveAppLaunch must clear it and '
-    're-resolve rather than serving the stale cache',
-    () async {
-      final plugin = PostedSdk();
-      final fakePlatform = MockPostedSdkPlatform();
-      fakePlatform.resolveAppLaunchResult = _linkResult(
-        '/stale',
-        PostedLinkType.deferred,
-      );
-      // Gate enforces overlap deterministically (mock-server handshake), not
-      // a delay: the first resolve is held in flight until the test has
-      // issued resetSession(), so the reset provably overlaps the resolve.
-      final gate = Completer<void>();
-      fakePlatform.resolveAppLaunchGate = gate;
-      PostedSdkPlatform.instance = fakePlatform;
+  test('resetSession during an in-flight resolve is honored on the next '
+      'resolve: the stale in-flight result must not re-poison the cache, and '
+      'the following resolveAppLaunch must re-resolve rather than serving a '
+      'stale value (POS-459 / POS-537 generation guard)', () async {
+    final plugin = PostedSdk();
+    final fakePlatform = MockPostedSdkPlatform();
+    fakePlatform.resolveAppLaunchResult = _linkResult(
+      '/stale',
+      PostedLinkType.deferred,
+    );
+    // Gate enforces overlap deterministically (mock-server handshake), not
+    // a delay: the first resolve is held in flight until the test has
+    // issued resetSession(), so the reset provably overlaps the resolve.
+    final gate = Completer<void>();
+    fakePlatform.resolveAppLaunchGate = gate;
+    PostedSdkPlatform.instance = fakePlatform;
 
-      final inFlight = plugin.resolveAppLaunch(_config);
-      // Let the in-flight call reach the gate before resetting.
-      await Future<void>.delayed(Duration.zero);
+    final inFlight = plugin.resolveAppLaunch(_config);
+    // Let the in-flight call reach the gate before resetting.
+    await Future<void>.delayed(Duration.zero);
 
-      await plugin.resetSession();
-      expect(fakePlatform.resetSessionCalled, true);
+    await plugin.resetSession();
+    expect(fakePlatform.resetSessionCalled, true);
 
-      // Release the in-flight resolve; it completes and caches its (now
-      // stale) result — resetSession() does not cancel work in progress.
-      gate.complete();
-      final staleResult = await inFlight;
-      expect(staleResult.link?.route, '/stale');
+    // Release the in-flight resolve. The generation guard means its stale
+    // result is still returned to *this* caller, but is discarded rather
+    // than written into the shared cache — resetSession() does not cancel
+    // work in progress, it just stops that work from re-poisoning state.
+    gate.complete();
+    final staleResult = await inFlight;
+    expect(staleResult.link?.route, '/stale');
 
-      // The pending reset must be honored on the *next* resolve: it clears
-      // the stale cache and re-resolves, making a fresh platform call
-      // rather than serving the just-cached stale value.
-      fakePlatform.resolveAppLaunchResult = _linkResult(
-        '/rearm',
-        PostedLinkType.verified,
-      );
-      final rearmed = await plugin.resolveAppLaunch(_config);
+    // The reset must be honored on the *next* resolve: it must not serve
+    // the stale cache and must make a fresh platform call.
+    fakePlatform.resolveAppLaunchResult = _linkResult(
+      '/rearm',
+      PostedLinkType.verified,
+    );
+    final rearmed = await plugin.resolveAppLaunch(_config);
 
-      expect(fakePlatform.resolveAppLaunchCalls, 2);
-      expect(rearmed.link?.route, '/rearm');
-    },
-    skip:
-        'Known gap (POS-354 discovery, tracked as POS-459): resetSession() '
-        'eagerly clears the Dart-side cache instead of setting a '
-        'pending-reset flag applied at the start of the next resolve. A '
-        'resolve already in flight when resetSession() is called overwrites '
-        'the cleared cache with its stale result when it completes, so the '
-        'next resolveAppLaunch() serves the stale value instead of '
-        're-resolving. Un-skip once the pending-reset-flag fix (mirroring '
-        'the Android POS-181 design) lands in POS-459.',
-  );
+    expect(fakePlatform.resolveAppLaunchCalls, 2);
+    expect(rearmed.link?.route, '/rearm');
+  });
 
   test('configure() stores config for use by deprecated shims', () async {
     final plugin = PostedSdk();

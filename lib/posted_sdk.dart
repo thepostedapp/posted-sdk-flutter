@@ -31,6 +31,13 @@ class PostedSdk {
   Future<PostedResult>? _inFlightResolution;
   PostedConfig? _config;
 
+  /// Bumped by [resetSession]. A resolution in flight when a reset happens
+  /// captures the generation it started under; if that generation no longer
+  /// matches [_generation] by the time it completes, its result is stale and
+  /// must not be written back into the cache or in-flight handle (POS-459 /
+  /// POS-537, mirroring the Android POS-181 pending-reset design).
+  int _generation = 0;
+
   /// Debug/test-only observability: incremented each time a caller reuses an
   /// in-flight resolution instead of starting a new one. Lets a regression
   /// that reintroduces a second platform call surface as a test failure
@@ -78,7 +85,8 @@ class PostedSdk {
       }
       return inFlight;
     }
-    final resolution = _resolveOnce(config);
+    final generation = _generation;
+    final resolution = _resolveOnce(config, generation);
     _inFlightResolution = resolution;
     return resolution;
   }
@@ -86,19 +94,33 @@ class PostedSdk {
   /// Performs a single resolution, populating the fire-once cache on success and
   /// always clearing the in-flight handle so a failed resolution re-arms rather
   /// than being cached permanently.
-  Future<PostedResult> _resolveOnce(PostedConfig config) async {
+  ///
+  /// [generation] is the session generation this resolution started under. A
+  /// [resetSession] call that lands while the platform call is still pending
+  /// bumps [_generation] without waiting for it, so on completion this only
+  /// writes the cache / clears the in-flight handle if the generation is
+  /// still current — otherwise the result is stale and is returned to the
+  /// original caller but discarded from shared state (POS-537).
+  Future<PostedResult> _resolveOnce(PostedConfig config, int generation) async {
     try {
       final result = await PostedSdkPlatform.instance.resolveAppLaunch(config);
-      _cachedLaunchResult = result;
+      if (generation == _generation) {
+        _cachedLaunchResult = result;
+      }
       return result;
     } finally {
-      _inFlightResolution = null;
+      if (generation == _generation) {
+        _inFlightResolution = null;
+      }
     }
   }
 
-  /// Re-arms fire-once: clears the Dart-session cache and calls native
-  /// resetSession so the next [resolveAppLaunch] performs a fresh resolution.
+  /// Re-arms fire-once: clears the Dart-session cache, bumps the session
+  /// generation so a resolution already in flight cannot re-poison the cache
+  /// with a stale result once it completes, and calls native resetSession so
+  /// the next [resolveAppLaunch] performs a fresh resolution.
   Future<void> resetSession() async {
+    _generation++;
     _cachedLaunchResult = null;
     _inFlightResolution = null;
     await PostedSdkPlatform.instance.resetSession();
