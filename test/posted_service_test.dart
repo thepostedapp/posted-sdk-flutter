@@ -160,10 +160,10 @@ void main() {
 
     expect(service.pendingIntent, isNull);
 
-    await service.processLink('detour://manual', emitIntent: false);
+    await service.processLink('posted://manual', emitIntent: false);
     expect(service.pendingIntent, isNull);
 
-    await service.processLink('detour://manual', emitIntent: true);
+    await service.processLink('posted://manual', emitIntent: true);
     expect(service.pendingIntent, isNotNull);
     expect(service.pendingIntent?.source, PostedIntentSource.manual);
     expect(service.pendingIntent?.link.route, '/manual');
