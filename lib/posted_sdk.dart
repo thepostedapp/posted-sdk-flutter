@@ -124,13 +124,13 @@ class PostedSdk {
   /// ```
   @Deprecated(
     'Use resolveAppLaunch(config) instead. resolveInitialLink() will be '
-    'removed in the next major release.',
+    'removed in 4.0.0.',
   )
   Future<PostedResult> resolveInitialLink() {
     _warnOnce(
       'resolveInitialLink',
-      'posted-sdk: resolveInitialLink() is deprecated. '
-          'Use resolveAppLaunch(config) instead.',
+      '[Posted] resolveInitialLink() is deprecated and will be removed in '
+          '4.0.0. Use resolveAppLaunch() instead.',
     );
     if (_config == null) {
       throw StateError(
@@ -143,13 +143,13 @@ class PostedSdk {
 
   @Deprecated(
     'Use resolveAppLaunch(config) instead. processLink() will be '
-    'removed in the next major release.',
+    'removed in 4.0.0.',
   )
   Future<PostedResult> processLink(String url) {
     _warnOnce(
       'processLink',
-      'posted-sdk: processLink() is deprecated. '
-          'Use resolveAppLaunch(config) instead.',
+      '[Posted] processLink() is deprecated and will be removed in 4.0.0. '
+          'Use resolveAppLaunch() instead.',
     );
     return PostedSdkPlatform.instance.processLink(url);
   }
