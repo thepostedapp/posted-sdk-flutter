@@ -22,7 +22,7 @@ Then run `flutter pub get`.
 This plugin uses native Posted SDK implementations:
 
 - Android: `com.postedapp:posted-sdk:4.0.0`
-- iOS: `Detour` CocoaPod `~> 1.1.0` (pulled automatically via the plugin podspec)
+- iOS: `PostedSDK` CocoaPod `~> 4.0.0` (pulled automatically via the plugin podspec)
 
 #### Android
 
