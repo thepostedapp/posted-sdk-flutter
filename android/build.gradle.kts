@@ -77,7 +77,7 @@ android {
 }
 
 dependencies {
-    implementation("com.postedapp:posted-sdk:3.0.0")
+    implementation("com.postedapp:posted-sdk:4.0.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.mockito:mockito-core:5.0.0")
