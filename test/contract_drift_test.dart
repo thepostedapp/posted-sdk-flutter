@@ -22,7 +22,6 @@
 // but NOT the canonical contract drifting ahead of it. Catching that requires
 // cross-repo read access in CI, which is deliberately out of scope here.
 
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
