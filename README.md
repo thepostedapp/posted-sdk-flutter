@@ -1,9 +1,8 @@
 # posted_sdk
 
-Flutter plugin for mobile attribution and deferred deep linking. `posted_sdk` wraps the native Detour SDKs for Android and iOS, giving Flutter apps access to deferred deep links that survive the Play Store or App Store install flow, along with Universal/App Links and custom scheme links in a single unified API.
+Flutter plugin for mobile attribution and deferred deep linking. `posted_sdk` wraps the native Posted SDKs for Android and iOS, giving Flutter apps access to deferred deep links that survive the Play Store or App Store install flow, along with Universal/App Links and custom scheme links in a single unified API.
 
-Upgrading from an earlier version? See [Migrating from 2.x to 3.0](#migrating-from-2x-to-30) or
-[Migration from `detour_flutter_plugin`](#migration-from-detour_flutter_plugin).
+Upgrading from an earlier version? See [Migrating from 2.x to 3.0](#migrating-from-2x-to-30).
 
 ## Installation
 
@@ -20,14 +19,14 @@ Then run `flutter pub get`.
 
 ### Native SDK dependencies
 
-This plugin uses native Detour SDK implementations:
+This plugin uses native Posted SDK implementations:
 
-- Android: `com.swmansion.detour:detour-sdk:1.1.0`
+- Android: `com.postedapp:posted-sdk:4.0.0`
 - iOS: `Detour` CocoaPod `~> 1.1.0` (pulled automatically via the plugin podspec)
 
 #### Android
 
-Make sure your Android repositories can resolve `com.swmansion.detour:detour-sdk` (for example via `google()` and `mavenCentral()` in your project repositories block).
+Make sure your Android repositories can resolve `com.postedapp:posted-sdk` (for example via `google()` and `mavenCentral()` in your project repositories block).
 
 #### iOS
 
@@ -118,7 +117,7 @@ final stream = sdk.linkStream;
 `PostedResult { bool processed; PostedLink? link }`, where `link` — when present — always carries
 the fully parsed `url`, `route`, `pathname`, `params`, and `type`. `link` is `null` only when the
 event has nothing attributable (e.g. a plain app open). This is the reference shape for continuous
-deep-link delivery across Detour's platform SDKs; React Native's continuous-event stream hoists the
+deep-link delivery across Posted's platform SDKs; React Native's continuous-event stream hoists the
 same parsed link fields (plus a top-level `url`) onto its event payload rather than nesting a
 `PostedLink`, which is a platform-idiomatic wrapper difference, not a divergence in the underlying
 data.
@@ -380,53 +379,6 @@ internally, so `resolveAppLaunch(config)` is the complete call.
 fire-once flag and the cached result, so the result **survives app updates** — every call after the
 first returns the same cached `PostedResult` for a given install. Only a **reinstall**, or an
 explicit call to `resetSession()`, re-arms it for a fresh resolution.
-
----
-
-## Migration from `detour_flutter_plugin`
-
-`detour_flutter_plugin` v1.x has been superseded by `posted_sdk` v2.0.0. The 2.0.0 release is a pure rebrand — no behavioral or API-shape changes — so the upgrade is mechanical. See the [`CHANGELOG`](./CHANGELOG.md) for the full list of breaking changes.
-
-### 1. Package name
-
-Update the dependency in your `pubspec.yaml` and your imports:
-
-```yaml
-dependencies:
-  posted_sdk: ^3.0.0   # was: detour_flutter_plugin
-```
-
-```dart
-import 'package:posted_sdk/posted_sdk.dart';   // was: package:detour_flutter_plugin/detour_flutter_plugin.dart
-```
-
-### 2. Public symbols
-
-All `Detour*` names have `Posted*` equivalents. The old names were available as deprecated typedef/re-export shims throughout the 2.x line and are **removed as of v3.0.0** — code must now use the `Posted*` names. If you are upgrading straight from v1.x, rename using the table below:
-
-| v1 name (removed in v3.0.0) | Current (`Posted*`) |
-| --- | --- |
-| `DetourService` | `PostedService` |
-| `DetourFlutterPlugin` | `PostedSdk` |
-| `DetourConfig` | `PostedConfig` |
-| `DetourResult` | `PostedResult` |
-| `DetourLink` | `PostedLink` |
-| `DetourIntent` | `PostedIntent` |
-| `DetourIntentSource` | `PostedIntentSource` |
-| `DetourEventName` | `PostedEventName` |
-| `LinkType` | `PostedLinkType` |
-| `LinkProcessingMode` | `PostedLinkProcessingMode` |
-
-### 3. Platform channels
-
-The underlying method and event channel names were renamed. This is internal to the plugin and requires no change for consumers of the Dart API, but is relevant if you have custom platform code, mocks, or tests that reference the channels directly:
-
-| v1 | v2 |
-| --- | --- |
-| method channel `detour_flutter_plugin` | `posted_sdk` |
-| event channel `detour_flutter_plugin/links` | `posted_sdk/links` |
-
-The native `pluginClass` (`PostedFlutterPlugin`), the Android package (`com.postedapp.posted`), and the Flutter marker class (`PostedFlutterMarker`) were also renamed as part of the rebrand; these are internal and do not affect Flutter app code.
 
 ---
 

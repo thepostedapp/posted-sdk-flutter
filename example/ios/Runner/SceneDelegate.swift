@@ -6,5 +6,5 @@ class SceneDelegate: FlutterSceneDelegate {
   // this is the place to override:
   // - scene(_:openURLContexts:)
   // - scene(_:continue:)
-  // Always forward to `super` so plugin delegates (including Detour) can run.
+  // Always forward to `super` so plugin delegates (including Posted) can run.
 }

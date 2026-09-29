@@ -17,12 +17,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import com.swmansion.detour.Detour
-import com.swmansion.detour.DetourConfig
-import com.swmansion.detour.analytics.DetourAnalytics
-import com.swmansion.detour.analytics.DetourEventNames
-import com.swmansion.detour.models.LinkProcessingMode
-import com.swmansion.detour.models.LinkResult
+import com.postedapp.posted.analytics.PostedAnalytics
+import com.postedapp.posted.analytics.PostedEventNames
+import com.postedapp.posted.models.LinkProcessingMode
+import com.postedapp.posted.models.LinkResult
 
 class PostedFlutterPlugin :
     FlutterPlugin,
@@ -84,7 +82,7 @@ class PostedFlutterPlugin :
         val sink = eventSink ?: return false
 
         scope.launch {
-            when (val nativeResult = Detour.processLink(intent)) {
+            when (val nativeResult = Posted.processLink(intent)) {
                 is LinkResult.Error -> {
                     sink.error("NATIVE_ERROR", nativeResult.exception.message, null)
                 }
@@ -126,14 +124,14 @@ class PostedFlutterPlugin :
                     return
                 }
 
-                val config = DetourConfig(
+                val config = PostedConfig(
                     apiKey = apiKey,
                     appId = appID,
                     linkProcessingMode = mode,
                     storage = null,
                 )
 
-                Detour.initialize(appContext, config)
+                Posted.initialize(appContext, config)
                 isConfigured = true
                 result.success(null)
             }
@@ -146,7 +144,7 @@ class PostedFlutterPlugin :
 
                 val initialIntent = activity?.intent ?: Intent()
                 scope.launch {
-                    when (val nativeResult = Detour.processLink(initialIntent)) {
+                    when (val nativeResult = Posted.processLink(initialIntent)) {
                         is LinkResult.Error -> {
                             result.error("NATIVE_ERROR", nativeResult.exception.message, null)
                         }
@@ -170,7 +168,7 @@ class PostedFlutterPlugin :
 
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(rawUrl))
                 scope.launch {
-                    when (val nativeResult = Detour.processLink(intent)) {
+                    when (val nativeResult = Posted.processLink(intent)) {
                         is LinkResult.Error -> {
                             result.error("NATIVE_ERROR", nativeResult.exception.message, null)
                         }
@@ -192,18 +190,18 @@ class PostedFlutterPlugin :
                     return
                 }
 
-                val enumValue = DetourEventNames.entries.firstOrNull { it.eventName == eventName }
+                val enumValue = PostedEventNames.entries.firstOrNull { it.eventName == eventName }
                 if (enumValue == null) {
                     result.error(
                         "UNSUPPORTED_EVENT",
-                        "Android SDK supports predefined DetourEventNames only. Received: $eventName",
+                        "Android SDK supports predefined PostedEventNames only. Received: $eventName",
                         null,
                     )
                     return
                 }
 
                 val data = args["data"]
-                DetourAnalytics.logEvent(enumValue, data)
+                PostedAnalytics.logEvent(enumValue, data)
                 result.success(null)
             }
 
@@ -220,7 +218,7 @@ class PostedFlutterPlugin :
                     return
                 }
 
-                DetourAnalytics.logRetention(eventName)
+                PostedAnalytics.logRetention(eventName)
                 result.success(null)
             }
 
@@ -256,19 +254,19 @@ class PostedFlutterPlugin :
                         "deferred-only" -> LinkProcessingMode.DEFERRED_ONLY
                         else -> LinkProcessingMode.ALL
                     }
-                    val config = DetourConfig(
+                    val config = PostedConfig(
                         apiKey = apiKey,
                         appId = appID,
                         linkProcessingMode = mode,
                         storage = null,
                     )
-                    Detour.initialize(appContext, config)
+                    Posted.initialize(appContext, config)
                     isConfigured = true
                 }
 
                 val initialIntent = activity?.intent ?: Intent()
                 scope.launch {
-                    when (val nativeResult = Detour.processLink(initialIntent)) {
+                    when (val nativeResult = Posted.processLink(initialIntent)) {
                         is LinkResult.Error -> {
                             result.error("NATIVE_ERROR", nativeResult.exception.message, null)
                         }
@@ -303,9 +301,9 @@ class PostedFlutterPlugin :
                         "pathname" to nativeResult.pathname,
                         "params" to nativeResult.params,
                         "type" to when (nativeResult.type) {
-                            com.swmansion.detour.models.LinkType.DEFERRED -> "deferred"
-                            com.swmansion.detour.models.LinkType.VERIFIED -> "verified"
-                            com.swmansion.detour.models.LinkType.SCHEME -> "scheme"
+                            com.postedapp.posted.models.LinkType.DEFERRED -> "deferred"
+                            com.postedapp.posted.models.LinkType.VERIFIED -> "verified"
+                            com.postedapp.posted.models.LinkType.SCHEME -> "scheme"
                         },
                     ),
                 )

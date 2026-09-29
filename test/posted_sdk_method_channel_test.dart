@@ -21,7 +21,7 @@ void main() {
               return {
                 'processed': true,
                 'link': {
-                  'url': 'https://detour.dev/promo?campaign=spring',
+                  'url': 'https://posted.link/promo?campaign=spring',
                   'route': '/promo?campaign=spring',
                   'pathname': '/promo',
                   'params': {'campaign': 'spring'},
@@ -32,7 +32,7 @@ void main() {
               return {
                 'processed': true,
                 'link': {
-                  'url': 'https://detour.dev/onboarding',
+                  'url': 'https://posted.link/onboarding',
                   'route': '/onboarding',
                   'pathname': '/onboarding',
                   'params': <String, String>{},
@@ -194,7 +194,7 @@ void main() {
       sink.success({
         'processed': true,
         'link': {
-          'url': 'https://detour.dev/promo?campaign=spring',
+          'url': 'https://posted.link/promo?campaign=spring',
           'route': '/promo?campaign=spring',
           'pathname': '/promo',
           'params': {'campaign': 'spring'},
@@ -207,7 +207,7 @@ void main() {
       final result = results.single;
       expect(result.processed, true);
       expect(result.link, isNotNull);
-      expect(result.link?.url, 'https://detour.dev/promo?campaign=spring');
+      expect(result.link?.url, 'https://posted.link/promo?campaign=spring');
       expect(result.link?.route, '/promo?campaign=spring');
       expect(result.link?.pathname, '/promo');
       expect(result.link?.params, {'campaign': 'spring'});
