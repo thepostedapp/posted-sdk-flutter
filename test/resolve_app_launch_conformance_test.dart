@@ -6,7 +6,7 @@ import 'package:posted_sdk/posted_sdk_platform_interface.dart';
 
 /// resolveAppLaunch conformance (POS-440, extends the POS-25 harness).
 ///
-/// Scope note: `detour-backend-contract.yaml` governs the HTTP wire between
+/// Scope note: `posted-backend-contract.yaml` governs the HTTP wire between
 /// the *native* SDKs and the backend. Dart's [PostedSdk.resolveAppLaunch]
 /// never makes that HTTP call itself — [MethodChannelPostedSdk.resolveAppLaunch]
 /// only invokes the `resolveAppLaunch` platform-channel method; the embedded
@@ -56,7 +56,7 @@ void main() {
     nativeResponse = {
       'processed': true,
       'link': {
-        'url': 'https://detour.dev/app/promo?ref=spring',
+        'url': 'https://posted.link/app/promo?ref=spring',
         'route': '/promo?ref=spring',
         'pathname': '/promo',
         'params': {'ref': 'spring'},

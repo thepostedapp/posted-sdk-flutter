@@ -64,7 +64,7 @@ PostedResult _resultFor(String route, PostedLinkType type) {
   return PostedResult(
     processed: true,
     link: PostedLink(
-      url: 'https://detour.dev$route',
+      url: 'https://posted.link$route',
       route: route,
       pathname: route.split('?').first,
       params: const {},

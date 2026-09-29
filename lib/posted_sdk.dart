@@ -181,7 +181,7 @@ class PostedSdk {
   /// the fully parsed [PostedLink] (`url`/`route`/`pathname`/`params`/`type`).
   /// `link` is null only when the event has nothing attributable (e.g. a
   /// plain app open). This is the reference shape for continuous deep-link
-  /// delivery across Detour's platform SDKs.
+  /// delivery across Posted's platform SDKs.
   ///
   /// See POS-503 for the cross-platform canonical continuous-event contract,
   /// POS-504 for the React Native child (the platform that hoists `url`
