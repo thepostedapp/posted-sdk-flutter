@@ -12,7 +12,7 @@ Add the package to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  posted_sdk: ^3.0.0
+  posted_sdk: ^4.0.0
 ```
 
 Then run `flutter pub get`.
@@ -67,8 +67,8 @@ void initState() {
 Future<void> _startPosted() async {
   await posted.start(
     const PostedConfig(
-      apiKey: '<REPLACE_WITH_YOUR_API_KEY>',
-      appID: '<REPLACE_WITH_APP_ID_FROM_PLATFORM>',
+      apiKey: '<YOUR_API_KEY>',
+      appID: '<YOUR_APP_ID>',
     ),
   );
 }
@@ -106,8 +106,8 @@ final sdk = PostedSdk();
 
 final initial = await sdk.resolveAppLaunch(
   const PostedConfig(
-    apiKey: '<REPLACE_WITH_YOUR_API_KEY>',
-    appID: '<REPLACE_WITH_APP_ID_FROM_PLATFORM>',
+    apiKey: '<YOUR_API_KEY>',
+    appID: '<YOUR_APP_ID>',
   ),
 );
 final stream = sdk.linkStream;
