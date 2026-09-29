@@ -79,7 +79,8 @@ void main() {
       expect(
         text.contains('godetour.dev'),
         isFalse,
-        reason: 'Contract must not reference the third-party godetour.dev host.',
+        reason:
+            'Contract must not reference the third-party godetour.dev host.',
       );
     });
   });
