@@ -1,6 +1,6 @@
-// CONTRACT: The native Android SDK (android-detour) discovers this class by name
+// CONTRACT: The native Android SDK (posted-sdk-android) discovers this class by name
 // via reflection in FlutterSdkHeaderResolver.kt. The native SDK ships dual-lookup
-// for both DetourFlutterMarker and PostedFlutterMarker during the transition window
+// for PostedFlutterMarker
 // — confirm with the Android SDK team ([POS-10]) before merging. Do NOT rename
 // this class or the SDK_HEADER_VALUE field without updating the native SDK.
 

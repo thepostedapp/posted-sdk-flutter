@@ -15,7 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 ///   `android`; Flutter wrapper (both iOS-host and Android-host markers) ->
 ///   `flutter`.
 /// - Backend dependency: the native dual-lookup (`PostedFlutterMarker` ->
-///   legacy `DetourFlutterMarker`) reads this value verbatim; a
+///   `PostedFlutterMarker`) reads this value verbatim; a
 ///   token/format drift on any platform silently mis-attributes installs.
 ///   That is why this is pinned in CI.
 ///

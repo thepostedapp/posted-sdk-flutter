@@ -11,9 +11,9 @@
 //        test/fixtures/posted-backend-contract.yaml
 //   2. shasum -a 256 test/fixtures/posted-backend-contract.yaml
 //   3. update canonicalSha256 below with the new digest
-//   4. update the matching pins in the sibling SDKs (ios-detour
-//      ContractConformanceTests.swift header, android-detour and
-//      react-native-detour fixtures) so all four move together
+//   4. update the matching pins in the sibling SDKs (posted-sdk-ios
+//      ContractFixtureChecksumTests.swift, posted-sdk-android and
+//      posted-sdk-react-native fixtures) so all four move together
 //
 // KNOWN LIMITATION: a pinned checksum detects this vendored copy being edited,
 // but NOT the canonical contract drifting ahead of it. Catching that needs

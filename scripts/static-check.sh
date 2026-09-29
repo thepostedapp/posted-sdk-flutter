@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Static gate — detour-flutter-plugin.
+# Static gate — posted-sdk-flutter.
 # NOTE: this repo requires Dart ^3.11.1, whose VM needs macOS >= 14. The dev host is macOS 12.6,
 # so `flutter analyze`/`dart` cannot run here. ALL correctness for this plugin is verified in CI.
 # This local gate is intentionally a no-op so the agent workflow stays uniform.

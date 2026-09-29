@@ -13,7 +13,7 @@ import 'package:posted_sdk/posted_sdk_platform_interface.dart';
 /// native iOS/Android SDK performs the actual `/api/link/match-link` request
 /// (both the `DeterministicMatch`/`ProbabilisticFingerprint` request `oneOf`
 /// and the `LinkResponse` reply). That wire conformance is exercised by the
-/// android-detour / ios-detour conformance suites, not here.
+/// posted-sdk-android / posted-sdk-ios conformance suites, not here.
 ///
 /// What *is* Flutter's contract to keep stable is the Dart<->native
 /// method-channel boundary: the outgoing arg map [MethodChannelPostedSdk]

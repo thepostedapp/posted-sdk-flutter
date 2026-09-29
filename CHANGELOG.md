@@ -21,7 +21,7 @@ upgrade steps.
 ### Changed
 
 * X-SDK marker header bumped to `flutter/3.0.0`.
-* Rebranded package metadata to Posted domains: `homepage` → `https://posted.app`, `repository`/`issue_tracker` → `github.com/thepostedapp/posted-sdk-flutter`, podspec contact → `yuriy@postedapp.com`. Replaced legacy `godetour.*` domains with `posted.app` / `posted.link` across the example app, docs, and sample keys (`POSTED_API_KEY` / `POSTED_APP_ID`).
+* Rebranded package metadata: `repository`/`issue_tracker` → `github.com/thepostedapp/posted-sdk-flutter`, podspec contact → `yuriy@postedapp.com`. Moved the example app, docs and sample keys onto Posted hosts (`attr.postedapp.com` for the API, `l.postedapp.com` for short links) and the `POSTED_API_KEY` / `POSTED_APP_ID` names.
 * One-shot match-link resolution (clickId/fingerprint → `{link}`) is unchanged — this release
   reshapes the client-side entry point only; there is no contract or backend change.
 
@@ -37,7 +37,7 @@ upgrade steps.
 
 ### Removed
 
-* **Breaking:** the deprecated `Detour*` type-alias / re-export shims and the un-prefixed `LinkType` / `LinkProcessingMode` aliases introduced in 2.0.0. These lived for one minor cycle; code must now use the `Posted*` names (`PostedSdk`, `PostedService`, `PostedConfig`, `PostedResult`, `PostedLink`, `PostedIntent`, `PostedIntentSource`, `PostedEventName`, `PostedLinkType`, `PostedLinkProcessingMode`, `PostedSdkPlatform`, `MethodChannelPostedSdk`). See the migration table in the README.
+* **Breaking:** the deprecated legacy type-alias / re-export shims and the un-prefixed `LinkType` / `LinkProcessingMode` aliases introduced in 2.0.0. These lived for one minor cycle; code must now use the `Posted*` names (`PostedSdk`, `PostedService`, `PostedConfig`, `PostedResult`, `PostedLink`, `PostedIntent`, `PostedIntentSource`, `PostedEventName`, `PostedLinkType`, `PostedLinkProcessingMode`, `PostedSdkPlatform`, `MethodChannelPostedSdk`). See the migration table in the README.
 * No `PostedSdk` methods were hard-removed from the public surface in this release — `resolveInitialLink()`
   and `processLink()` move out of the recommended attribution-first surface into the deprecated shims
   above and are scheduled for outright removal in 4.0.

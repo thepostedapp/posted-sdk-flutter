@@ -1,5 +1,5 @@
-// CONTRACT: The native iOS SDK (DetourIOS) discovers this class by name via
-// NSClassFromString. The native SDK ships dual-lookup for both DetourFlutterMarker
+// CONTRACT: The native iOS SDK (PostedSDK) discovers this class by name via
+// NSClassFromString. The native SDK looks up PostedFlutterMarker
 // and PostedFlutterMarker during the transition window — confirm with the iOS SDK
 // team ([POS-11]) before merging. Do NOT rename this class or the sdkHeaderValue
 // property without updating the native SDK.

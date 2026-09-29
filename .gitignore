@@ -32,3 +32,7 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 /build/
 /coverage/
+
+# Example-app lockfiles are regenerable; do not commit.
+example/pubspec.lock
+example/ios/Podfile.lock

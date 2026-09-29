@@ -31,7 +31,7 @@ All internal/relative links resolved (files exist, anchors match actual headings
 `./example`, `./example/README.md`, `./CHANGELOG.md`, `./LICENSE`,
 `CHANGELOG.md → ./README.md#migrating-from-2x-to-30`.
 
-Test fixture URLs (`detour.dev`, `godetour.dev`, `ex.co`, `example.com` in `test/**`) are
+Test fixture URLs (`ex.co`, `example.com` in `test/**`) are
 intentionally-fake sample domains used as test data, not documentation links, and were excluded
 from this sweep.
 
