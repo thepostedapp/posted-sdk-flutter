@@ -1,4 +1,4 @@
-## 3.0.0
+## 4.0.0
 
 First public release under the `posted_sdk` / Posted brand, and the **attribution-first reshape** of
 the public API: the primary entry point is now `configure` + `resolveAppLaunch` (+ optional
