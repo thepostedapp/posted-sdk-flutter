@@ -77,8 +77,7 @@ android {
 }
 
 dependencies {
-    // TODO(POS-521): repoint to com.postedapp.posted:posted-sdk after Android republish (publish-gated)
-    implementation("com.swmansion.detour:detour-sdk:1.1.0")
+    implementation("com.postedapp:posted-sdk:3.0.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.mockito:mockito-core:5.0.0")
