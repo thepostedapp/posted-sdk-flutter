@@ -382,6 +382,3 @@ explicit call to `resetSession()`, re-arms it for a fresh resolution.
 
 ---
 
-## License
-
-This library is licensed under [The MIT License](./LICENSE).
