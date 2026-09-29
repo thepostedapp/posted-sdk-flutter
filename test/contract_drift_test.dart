@@ -44,9 +44,15 @@ void main() {
     expect(text, contains('version: 1.1.0'));
   });
 
-  test('vendored contract targets the postedapp.com API host', () {
+  test('vendored contract targets only postedapp.com hosts', () {
     final text = File(fixturePath).readAsStringSync();
     expect(text, contains('https://attr.postedapp.com'));
-    expect(text.contains('godetour.dev'), isFalse);
+    final foreign = RegExp(r'https?://([A-Za-z0-9._-]+)')
+        .allMatches(text)
+        .map((m) => m.group(1)!)
+        .where((h) => h != 'postedapp.com' && !h.endsWith('.postedapp.com'))
+        .toSet();
+    expect(foreign, isEmpty,
+        reason: 'Contract may only reference postedapp.com hosts.');
   });
 }
