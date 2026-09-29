@@ -1,0 +1,60 @@
+name: native-ci
+
+# POS-274: current `ci.yml` only runs the Dart `flutter test` job, so the native Swift/Kotlin
+# X-SDK marker resolver never actually executes in CI (see POS-163 discovery). These jobs run the
+# real native resolver on each platform and fail if the live X-SDK header does not equal
+# flutter/<pubspec-version>.
+on:
+  pull_request: {}
+  push: { branches: [main] }
+
+jobs:
+  android-native-resolver:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "17" }
+      # gradlew/gradlew.bat are gitignored in this repo (example/android/.gitignore), so there is
+      # no wrapper to invoke here. Use a system-provisioned Gradle matching
+      # example/android/gradle/wrapper/gradle-wrapper.properties instead of ./gradlew.
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: "8.14" }
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable }
+      - run: flutter pub get
+        working-directory: example
+      - name: Run PostedFlutterMarker unit test (real BuildConfig-derived resolver)
+        run: gradle :posted_sdk:testDebugUnitTest --tests "com.postedapp.posted.PostedFlutterMarkerTest"
+        working-directory: example/android
+
+  ios-native-resolver:
+    # Gated until PostedSDK is resolvable by CocoaPods.
+    #
+    # pod install resolves `s.dependency PostedSDK` against trunk, where the pod is not yet
+    # published (board hold on repo visibility, POS-572), and the example Podfile's git override
+    # points at thepostedapp/posted-sdk-ios which is private, so an unauthenticated runner cannot
+    # clone it either. The job fails on dependency resolution, not on anything this repo controls.
+    #
+    # Deliberately SKIPPED rather than continue-on-error: a skipped job is honest, whereas
+    # continue-on-error reports green while proving nothing. Set the repo variable
+    # POSTEDSDK_POD_AVAILABLE to "true" once the pod is on trunk (or the repo is public) to
+    # re-enable this job.
+    if: ${{ vars.POSTEDSDK_POD_AVAILABLE == 'true' }}
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable }
+      - run: flutter pub get
+        working-directory: example
+      - run: pod install
+        working-directory: example/ios
+      - name: Run PostedFlutterMarker XCTest (real NSClassFromString resolver)
+        run: |
+          xcodebuild test \
+            -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            -only-testing:RunnerTests/PostedFlutterMarkerTests
+        working-directory: example/ios

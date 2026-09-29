@@ -1,0 +1,27 @@
+name: iOS Marker Version
+
+on:
+  pull_request:
+    paths:
+      - "pubspec.yaml"
+      - "ios/Classes/PostedFlutterMarker.swift"
+      - "scripts/check_ios_marker_version.sh"
+      - ".github/workflows/ios-marker-version.yml"
+  push:
+    paths:
+      - "pubspec.yaml"
+      - "ios/Classes/PostedFlutterMarker.swift"
+      - "scripts/check_ios_marker_version.sh"
+      - ".github/workflows/ios-marker-version.yml"
+  workflow_dispatch:
+
+jobs:
+  check-ios-marker-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Verify iOS marker version matches pubspec
+        run: bash scripts/check_ios_marker_version.sh
