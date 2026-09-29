@@ -209,6 +209,14 @@ public class PostedFlutterPlugin: NSObject, FlutterPlugin, FlutterApplicationLif
             Task { @MainActor [weak self] in
                 guard let self = self else { return }
                 let r = await Posted.shared.resolveAppLaunch(config: config, launchContext: .launchOptions(launchOpts))
+                // A genuine network/transport failure must not arm the plugin's fire-once
+                // cache (POS-460/POS-531) — only persist on success or a legitimate
+                // no-match. Mirrors the Android glue's `LinkResult.Error` branch, which
+                // already returns before `save()`.
+                guard !r.resolutionFailed else {
+                    result(FlutterError(code: "NATIVE_ERROR", message: "Attribution resolution failed", details: nil))
+                    return
+                }
                 let map = self.postedResultToMap(r)
                 PostedAttributionCache.save(map, to: UserDefaults.standard)
                 result(map)
