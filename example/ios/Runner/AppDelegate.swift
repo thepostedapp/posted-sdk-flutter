@@ -10,7 +10,7 @@ import UIKit
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
-  // DETOUR iOS INTEGRATION START
+  // POSTED iOS INTEGRATION START
 
   // Integration point for custom-scheme deep links.
   // In Flutter, forward to `super` so plugin delegates can process the URL.
@@ -35,7 +35,7 @@ import UIKit
       restorationHandler: restorationHandler
     )
   }
-  // DETOUR iOS INTEGRATION END
+  // POSTED iOS INTEGRATION END
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)

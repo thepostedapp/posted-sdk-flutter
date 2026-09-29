@@ -8,6 +8,17 @@ import 'package:flutter_test/flutter_test.dart';
 /// overrides the native `X-SDK` header to `flutter/<pubspec-version>` (rather
 /// than the bare `android/…` / `ios/…` the native SDKs emit on their own).
 ///
+/// POS-87 canonical contract (identical wording across ios/android/flutter):
+/// - Format: the `X-SDK` header value MUST match `^<platform>/<semver>$`,
+///   where `<semver>` = `\d+\.\d+\.\d+`.
+/// - Platform token (exact): native iOS -> `ios`; native Android ->
+///   `android`; Flutter wrapper (both iOS-host and Android-host markers) ->
+///   `flutter`.
+/// - Backend dependency: the native dual-lookup (`PostedFlutterMarker` ->
+///   legacy `DetourFlutterMarker`) reads this value verbatim; a
+///   token/format drift on any platform silently mis-attributes installs.
+///   That is why this is pinned in CI.
+///
 /// They are intentionally *source guards*: the true native resolvers
 /// (`PostedFlutterMarker` via `NSClassFromString` on iOS, the injected
 /// `BuildConfig.FLUTTER_SDK_HEADER_VALUE` on Android) can only be exercised on
@@ -35,6 +46,22 @@ void main() {
         throw StateError('Failed to parse version from pubspec.yaml');
       }
       pubspecVersion = match.group(1)!;
+    });
+
+    test('pubspec-derived flutter/<version> matches the POS-87 canonical '
+        'format ^flutter/\\d+.\\d+.\\d+\$', () {
+      // Pins the FORMAT, not just an exact-string match against the
+      // current version — catches a non-semver pubspec version (e.g. a
+      // stray build metadata suffix) even if it still round-trips through
+      // the exact-equality checks below.
+      expect(
+        'flutter/$pubspecVersion',
+        matches(RegExp(r'^flutter/\d+\.\d+\.\d+$')),
+        reason:
+            'X-SDK value must match the shared POS-87 contract '
+            r'^<platform>/<semver>$ with platform token `flutter` — got '
+            'flutter/$pubspecVersion',
+      );
     });
 
     test('iOS marker sdkHeaderValue is flutter/<pubspec-version>', () {

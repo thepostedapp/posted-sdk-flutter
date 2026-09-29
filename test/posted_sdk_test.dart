@@ -4,6 +4,7 @@ import 'package:posted_sdk/posted_sdk.dart';
 import 'package:posted_sdk/posted_sdk_method_channel.dart';
 import 'package:posted_sdk/posted_sdk_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _config = PostedConfig(
@@ -16,7 +17,7 @@ const _config = PostedConfig(
 PostedResult _linkResult(String route, PostedLinkType type) => PostedResult(
   processed: true,
   link: PostedLink(
-    url: 'https://detour.dev$route',
+    url: 'https://posted.link$route',
     route: route,
     pathname: route.split('?').first,
     params: const {},
@@ -320,60 +321,49 @@ void main() {
     expect(identical(rearmed, first), false);
   });
 
-  test(
-    'resetSession during an in-flight resolve is honored on the next '
-    'resolve: the in-flight call is allowed to complete and cache its '
-    'stale result, but the following resolveAppLaunch must clear it and '
-    're-resolve rather than serving the stale cache',
-    () async {
-      final plugin = PostedSdk();
-      final fakePlatform = MockPostedSdkPlatform();
-      fakePlatform.resolveAppLaunchResult = _linkResult(
-        '/stale',
-        PostedLinkType.deferred,
-      );
-      // Gate enforces overlap deterministically (mock-server handshake), not
-      // a delay: the first resolve is held in flight until the test has
-      // issued resetSession(), so the reset provably overlaps the resolve.
-      final gate = Completer<void>();
-      fakePlatform.resolveAppLaunchGate = gate;
-      PostedSdkPlatform.instance = fakePlatform;
+  test('resetSession during an in-flight resolve is honored on the next '
+      'resolve: the stale in-flight result must not re-poison the cache, and '
+      'the following resolveAppLaunch must re-resolve rather than serving a '
+      'stale value (POS-459 / POS-537 generation guard)', () async {
+    final plugin = PostedSdk();
+    final fakePlatform = MockPostedSdkPlatform();
+    fakePlatform.resolveAppLaunchResult = _linkResult(
+      '/stale',
+      PostedLinkType.deferred,
+    );
+    // Gate enforces overlap deterministically (mock-server handshake), not
+    // a delay: the first resolve is held in flight until the test has
+    // issued resetSession(), so the reset provably overlaps the resolve.
+    final gate = Completer<void>();
+    fakePlatform.resolveAppLaunchGate = gate;
+    PostedSdkPlatform.instance = fakePlatform;
 
-      final inFlight = plugin.resolveAppLaunch(_config);
-      // Let the in-flight call reach the gate before resetting.
-      await Future<void>.delayed(Duration.zero);
+    final inFlight = plugin.resolveAppLaunch(_config);
+    // Let the in-flight call reach the gate before resetting.
+    await Future<void>.delayed(Duration.zero);
 
-      await plugin.resetSession();
-      expect(fakePlatform.resetSessionCalled, true);
+    await plugin.resetSession();
+    expect(fakePlatform.resetSessionCalled, true);
 
-      // Release the in-flight resolve; it completes and caches its (now
-      // stale) result — resetSession() does not cancel work in progress.
-      gate.complete();
-      final staleResult = await inFlight;
-      expect(staleResult.link?.route, '/stale');
+    // Release the in-flight resolve. The generation guard means its stale
+    // result is still returned to *this* caller, but is discarded rather
+    // than written into the shared cache — resetSession() does not cancel
+    // work in progress, it just stops that work from re-poisoning state.
+    gate.complete();
+    final staleResult = await inFlight;
+    expect(staleResult.link?.route, '/stale');
 
-      // The pending reset must be honored on the *next* resolve: it clears
-      // the stale cache and re-resolves, making a fresh platform call
-      // rather than serving the just-cached stale value.
-      fakePlatform.resolveAppLaunchResult = _linkResult(
-        '/rearm',
-        PostedLinkType.verified,
-      );
-      final rearmed = await plugin.resolveAppLaunch(_config);
+    // The reset must be honored on the *next* resolve: it must not serve
+    // the stale cache and must make a fresh platform call.
+    fakePlatform.resolveAppLaunchResult = _linkResult(
+      '/rearm',
+      PostedLinkType.verified,
+    );
+    final rearmed = await plugin.resolveAppLaunch(_config);
 
-      expect(fakePlatform.resolveAppLaunchCalls, 2);
-      expect(rearmed.link?.route, '/rearm');
-    },
-    skip:
-        'Known gap (POS-354 discovery, tracked as POS-459): resetSession() '
-        'eagerly clears the Dart-side cache instead of setting a '
-        'pending-reset flag applied at the start of the next resolve. A '
-        'resolve already in flight when resetSession() is called overwrites '
-        'the cleared cache with its stale result when it completes, so the '
-        'next resolveAppLaunch() serves the stale value instead of '
-        're-resolving. Un-skip once the pending-reset-flag fix (mirroring '
-        'the Android POS-181 design) lands in POS-459.',
-  );
+    expect(fakePlatform.resolveAppLaunchCalls, 2);
+    expect(rearmed.link?.route, '/rearm');
+  });
 
   test('configure() stores config for use by deprecated shims', () async {
     final plugin = PostedSdk();
@@ -454,4 +444,140 @@ void main() {
       expect(fakePlatform.lastProcessLinkUrl, 'https://example.com/promo');
     },
   );
+
+  // ── Deprecation-warning once-per-session de-dup (POS-518, RN parity POS-177) ──
+
+  group('deprecation-warning once-per-session de-dup', () {
+    late List<String?> captured;
+    late DebugPrintCallback originalDebugPrint;
+
+    setUp(() {
+      captured = <String?>[];
+      originalDebugPrint = debugPrint;
+      debugPrint = (String? message, {int? wrapWidth}) {
+        captured.add(message);
+      };
+      // Earlier tests in this file (e.g. the fire-once/cache-sharing tests
+      // above) also call resolveInitialLink()/processLink(), which populate
+      // the module-level _warnedDeprecations set. Reset it here so each test
+      // in this group starts from a clean, unwarned state.
+      resetDeprecationWarningsForTest();
+    });
+
+    tearDown(() {
+      debugPrint = originalDebugPrint;
+      resetDeprecationWarningsForTest();
+    });
+
+    test('resolveInitialLink() prints its deprecation notice only on the first '
+        'call', () async {
+      final plugin = PostedSdk();
+      final fakePlatform = MockPostedSdkPlatform();
+      PostedSdkPlatform.instance = fakePlatform;
+      await plugin.configure(_config);
+
+      // ignore: deprecated_member_use
+      await plugin.resolveInitialLink();
+      // ignore: deprecated_member_use
+      await plugin.resolveInitialLink();
+
+      final notices = captured.where(
+        (m) => m != null && m.contains('resolveInitialLink() is deprecated'),
+      );
+      expect(notices.length, 1);
+    });
+
+    test(
+      'processLink() prints its deprecation notice only on the first call',
+      () async {
+        final plugin = PostedSdk();
+        final fakePlatform = MockPostedSdkPlatform();
+        PostedSdkPlatform.instance = fakePlatform;
+
+        // ignore: deprecated_member_use
+        await plugin.processLink('https://example.com/a');
+        // ignore: deprecated_member_use
+        await plugin.processLink('https://example.com/b');
+
+        final notices = captured.where(
+          (m) => m != null && m.contains('processLink() is deprecated'),
+        );
+        expect(notices.length, 1);
+      },
+    );
+
+    test('resolveInitialLink() and processLink() warnings are de-duped '
+        'independently per method', () async {
+      final plugin = PostedSdk();
+      final fakePlatform = MockPostedSdkPlatform();
+      PostedSdkPlatform.instance = fakePlatform;
+      await plugin.configure(_config);
+
+      // ignore: deprecated_member_use
+      await plugin.resolveInitialLink();
+      // ignore: deprecated_member_use
+      await plugin.processLink('https://example.com/a');
+      // ignore: deprecated_member_use
+      await plugin.resolveInitialLink();
+      // ignore: deprecated_member_use
+      await plugin.processLink('https://example.com/b');
+
+      final initialLinkNotices = captured.where(
+        (m) => m != null && m.contains('resolveInitialLink() is deprecated'),
+      );
+      final processLinkNotices = captured.where(
+        (m) => m != null && m.contains('processLink() is deprecated'),
+      );
+      expect(initialLinkNotices.length, 1);
+      expect(processLinkNotices.length, 1);
+    });
+
+    test('resetDeprecationWarningsForTest() re-arms the warning for a fresh '
+        'occurrence', () async {
+      final plugin = PostedSdk();
+      final fakePlatform = MockPostedSdkPlatform();
+      PostedSdkPlatform.instance = fakePlatform;
+
+      // ignore: deprecated_member_use
+      await plugin.processLink('https://example.com/a');
+      resetDeprecationWarningsForTest();
+      // ignore: deprecated_member_use
+      await plugin.processLink('https://example.com/b');
+
+      final notices = captured.where(
+        (m) => m != null && m.contains('processLink() is deprecated'),
+      );
+      expect(notices.length, 2);
+    });
+
+    test('resolveInitialLink() and processLink() warnings match the canonical '
+        'cross-platform template (POS-496/POS-536): "[Posted] <method>() is '
+        'deprecated and will be removed in 4.0.0. Use resolveAppLaunch() '
+        'instead."', () async {
+      final plugin = PostedSdk();
+      final fakePlatform = MockPostedSdkPlatform();
+      PostedSdkPlatform.instance = fakePlatform;
+      await plugin.configure(_config);
+
+      // ignore: deprecated_member_use
+      await plugin.resolveInitialLink();
+      // ignore: deprecated_member_use
+      await plugin.processLink('https://example.com/a');
+
+      expect(
+        captured,
+        contains(
+          '[Posted] resolveInitialLink() is deprecated and will be '
+          'removed in 4.0.0. Use resolveAppLaunch() instead.',
+        ),
+      );
+      expect(
+        captured,
+        contains(
+          '[Posted] processLink() is deprecated and will be removed in '
+          '4.0.0. Use resolveAppLaunch() instead.',
+        ),
+      );
+    });
+  });
 }

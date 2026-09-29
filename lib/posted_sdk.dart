@@ -6,10 +6,37 @@ import 'posted_sdk_platform_interface.dart';
 export 'src/models.dart';
 export 'src/posted_service.dart';
 
+/// Methods whose deprecation notice has already fired this session. Shared
+/// across all [PostedSdk] instances, mirroring the RN `deprecatedShims.ts`
+/// module-level de-dup (POS-177).
+final Set<String> _warnedDeprecations = <String>{};
+
+/// Prints [message] via [debugPrint] at most once per session for a given
+/// [method] key.
+void _warnOnce(String method, String message) {
+  if (_warnedDeprecations.add(method)) {
+    debugPrint(message);
+  }
+}
+
+/// Test-only re-arm hook: clears the once-per-session de-dup state so a test
+/// can re-exercise a deprecation warning. Not part of the public plugin API.
+@visibleForTesting
+void resetDeprecationWarningsForTest() {
+  _warnedDeprecations.clear();
+}
+
 class PostedSdk {
   PostedResult? _cachedLaunchResult;
   Future<PostedResult>? _inFlightResolution;
   PostedConfig? _config;
+
+  /// Bumped by [resetSession]. A resolution in flight when a reset happens
+  /// captures the generation it started under; if that generation no longer
+  /// matches [_generation] by the time it completes, its result is stale and
+  /// must not be written back into the cache or in-flight handle (POS-459 /
+  /// POS-537, mirroring the Android POS-181 pending-reset design).
+  int _generation = 0;
 
   /// Debug/test-only observability: incremented each time a caller reuses an
   /// in-flight resolution instead of starting a new one. Lets a regression
@@ -58,7 +85,8 @@ class PostedSdk {
       }
       return inFlight;
     }
-    final resolution = _resolveOnce(config);
+    final generation = _generation;
+    final resolution = _resolveOnce(config, generation);
     _inFlightResolution = resolution;
     return resolution;
   }
@@ -66,19 +94,33 @@ class PostedSdk {
   /// Performs a single resolution, populating the fire-once cache on success and
   /// always clearing the in-flight handle so a failed resolution re-arms rather
   /// than being cached permanently.
-  Future<PostedResult> _resolveOnce(PostedConfig config) async {
+  ///
+  /// [generation] is the session generation this resolution started under. A
+  /// [resetSession] call that lands while the platform call is still pending
+  /// bumps [_generation] without waiting for it, so on completion this only
+  /// writes the cache / clears the in-flight handle if the generation is
+  /// still current — otherwise the result is stale and is returned to the
+  /// original caller but discarded from shared state (POS-537).
+  Future<PostedResult> _resolveOnce(PostedConfig config, int generation) async {
     try {
       final result = await PostedSdkPlatform.instance.resolveAppLaunch(config);
-      _cachedLaunchResult = result;
+      if (generation == _generation) {
+        _cachedLaunchResult = result;
+      }
       return result;
     } finally {
-      _inFlightResolution = null;
+      if (generation == _generation) {
+        _inFlightResolution = null;
+      }
     }
   }
 
-  /// Re-arms fire-once: clears the Dart-session cache and calls native
-  /// resetSession so the next [resolveAppLaunch] performs a fresh resolution.
+  /// Re-arms fire-once: clears the Dart-session cache, bumps the session
+  /// generation so a resolution already in flight cannot re-poison the cache
+  /// with a stale result once it completes, and calls native resetSession so
+  /// the next [resolveAppLaunch] performs a fresh resolution.
   Future<void> resetSession() async {
+    _generation++;
     _cachedLaunchResult = null;
     _inFlightResolution = null;
     await PostedSdkPlatform.instance.resetSession();
@@ -104,12 +146,13 @@ class PostedSdk {
   /// ```
   @Deprecated(
     'Use resolveAppLaunch(config) instead. resolveInitialLink() will be '
-    'removed in the next major release.',
+    'removed in 4.0.0.',
   )
   Future<PostedResult> resolveInitialLink() {
-    debugPrint(
-      'posted-sdk: resolveInitialLink() is deprecated. '
-      'Use resolveAppLaunch(config) instead.',
+    _warnOnce(
+      'resolveInitialLink',
+      '[Posted] resolveInitialLink() is deprecated and will be removed in '
+          '4.0.0. Use resolveAppLaunch() instead.',
     );
     if (_config == null) {
       throw StateError(
@@ -122,16 +165,28 @@ class PostedSdk {
 
   @Deprecated(
     'Use resolveAppLaunch(config) instead. processLink() will be '
-    'removed in the next major release.',
+    'removed in 4.0.0.',
   )
   Future<PostedResult> processLink(String url) {
-    debugPrint(
-      'posted-sdk: processLink() is deprecated. '
-      'Use resolveAppLaunch(config) instead.',
+    _warnOnce(
+      'processLink',
+      '[Posted] processLink() is deprecated and will be removed in 4.0.0. '
+          'Use resolveAppLaunch() instead.',
     );
     return PostedSdkPlatform.instance.processLink(url);
   }
 
+  /// Canonical continuous-event payload: emits a [PostedResult] for every
+  /// runtime link event, with [PostedResult.link] — when non-null — carrying
+  /// the fully parsed [PostedLink] (`url`/`route`/`pathname`/`params`/`type`).
+  /// `link` is null only when the event has nothing attributable (e.g. a
+  /// plain app open). This is the reference shape for continuous deep-link
+  /// delivery across Posted's platform SDKs.
+  ///
+  /// See POS-503 for the cross-platform canonical continuous-event contract,
+  /// POS-504 for the React Native child (the platform that hoists `url`
+  /// instead of nesting [PostedLink]), and POS-502 for the cross-platform
+  /// consistency matrix.
   Stream<PostedResult> get linkStream => PostedSdkPlatform.instance.linkStream;
 
   Future<void> logEvent(

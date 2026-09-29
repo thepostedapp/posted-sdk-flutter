@@ -106,9 +106,26 @@ enum PostedAttributionCache {
     }
 
     /// Drops every cached attribution key (used on reset and on version drop).
+    ///
+    /// `UserDefaults` has no batch-remove API (unlike the Android `SharedPreferences`
+    /// batch clear in POS-346), so this loops `removeObject` one key at a time and is
+    /// not atomic — an interruption mid-loop can leave a partial clear behind.
+    ///
+    /// That's safe *only* because `allKeys` is ordered `keyResolved` first, then
+    /// `keyVersion`: `hasValidResolvedCache` requires `keyResolved` to be `true`, so as
+    /// soon as `keyResolved` is removed the cache reads as invalid regardless of which
+    /// other keys still linger, and the caller re-resolves instead of trusting a
+    /// half-cleared blob. If the order were reversed (`keyVersion` dropped first,
+    /// `keyResolved` still `true`), a torn clear could leave `hasValidResolvedCache`
+    /// reporting a version mismatch instead of "no cache" — still invalid today since
+    /// version mismatch also fails the check, but that safety would be incidental
+    /// rather than by design. Do not reorder `allKeys` without re-verifying this
+    /// invariant. See `testTornClear_onlyKeyResolvedRemoved_isInvalid` in
+    /// `RunnerTests.swift`.
     static func clear(_ defaults: UserDefaults) {
         for key in allKeys {
             defaults.removeObject(forKey: key)
         }
+        defaults.synchronize()
     }
 }

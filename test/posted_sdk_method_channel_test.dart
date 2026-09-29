@@ -21,7 +21,7 @@ void main() {
               return {
                 'processed': true,
                 'link': {
-                  'url': 'https://detour.dev/promo?campaign=spring',
+                  'url': 'https://posted.link/promo?campaign=spring',
                   'route': '/promo?campaign=spring',
                   'pathname': '/promo',
                   'params': {'campaign': 'spring'},
@@ -32,7 +32,7 @@ void main() {
               return {
                 'processed': true,
                 'link': {
-                  'url': 'https://detour.dev/onboarding',
+                  'url': 'https://posted.link/onboarding',
                   'route': '/onboarding',
                   'pathname': '/onboarding',
                   'params': <String, String>{},
@@ -161,5 +161,88 @@ void main() {
     expect(calls, hasLength(1));
     expect(calls.first.method, 'resetSession');
     expect(calls.first.arguments, isNull);
+  });
+
+  group('linkStream', () {
+    // linkStream is the canonical continuous-event payload contract (POS-503):
+    // every event carries the fully parsed PostedLink (url/route/pathname/
+    // params/type), not just a bare url. This locks that shape so it can't
+    // silently regress. See also the RN child (POS-504) and the
+    // cross-platform matrix (POS-502).
+    const eventChannel = EventChannel('posted_sdk/links');
+
+    tearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockStreamHandler(eventChannel, null);
+    });
+
+    test('emits PostedResult carrying the full parsed PostedLink', () async {
+      late MockStreamHandlerEventSink sink;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockStreamHandler(
+            eventChannel,
+            MockStreamHandler.inline(
+              onListen: (Object? arguments, MockStreamHandlerEventSink events) {
+                sink = events;
+              },
+            ),
+          );
+
+      final results = <PostedResult>[];
+      final subscription = platform.linkStream.listen(results.add);
+
+      sink.success({
+        'processed': true,
+        'link': {
+          'url': 'https://posted.link/promo?campaign=spring',
+          'route': '/promo?campaign=spring',
+          'pathname': '/promo',
+          'params': {'campaign': 'spring'},
+          'type': 'verified',
+        },
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      expect(results, hasLength(1));
+      final result = results.single;
+      expect(result.processed, true);
+      expect(result.link, isNotNull);
+      expect(result.link?.url, 'https://posted.link/promo?campaign=spring');
+      expect(result.link?.route, '/promo?campaign=spring');
+      expect(result.link?.pathname, '/promo');
+      expect(result.link?.params, {'campaign': 'spring'});
+      expect(result.link?.type, PostedLinkType.verified);
+
+      await subscription.cancel();
+    });
+
+    test(
+      'emits PostedResult with a null link when nothing is attributable',
+      () async {
+        late MockStreamHandlerEventSink sink;
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockStreamHandler(
+              eventChannel,
+              MockStreamHandler.inline(
+                onListen:
+                    (Object? arguments, MockStreamHandlerEventSink events) {
+                      sink = events;
+                    },
+              ),
+            );
+
+        final results = <PostedResult>[];
+        final subscription = platform.linkStream.listen(results.add);
+
+        sink.success({'processed': false, 'link': null});
+        await Future<void>.delayed(Duration.zero);
+
+        expect(results, hasLength(1));
+        expect(results.single.processed, false);
+        expect(results.single.link, isNull);
+
+        await subscription.cancel();
+      },
+    );
   });
 }

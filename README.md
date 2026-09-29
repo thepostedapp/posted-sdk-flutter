@@ -1,6 +1,8 @@
 # posted_sdk
 
-Flutter plugin for mobile attribution and deferred deep linking. `posted_sdk` wraps the native Detour SDKs for Android and iOS, giving Flutter apps access to deferred deep links that survive the Play Store or App Store install flow, along with Universal/App Links and custom scheme links in a single unified API.
+Flutter plugin for mobile attribution and deferred deep linking. `posted_sdk` wraps the native Posted SDKs for Android and iOS, giving Flutter apps access to deferred deep links that survive the Play Store or App Store install flow, along with Universal/App Links and custom scheme links in a single unified API.
+
+Upgrading from an earlier version? See [Migrating from 2.x to 3.0](#migrating-from-2x-to-30).
 
 ## Installation
 
@@ -17,14 +19,14 @@ Then run `flutter pub get`.
 
 ### Native SDK dependencies
 
-This plugin uses native Detour SDK implementations:
+This plugin uses native Posted SDK implementations:
 
-- Android: `com.swmansion.detour:detour-sdk:1.1.0`
-- iOS: `Detour` CocoaPod `~> 1.1.0` (pulled automatically via the plugin podspec)
+- Android: `com.postedapp:posted-sdk:4.0.0`
+- iOS: `PostedSDK` CocoaPod `~> 4.0.0` (pulled automatically via the plugin podspec)
 
 #### Android
 
-Make sure your Android repositories can resolve `com.swmansion.detour:detour-sdk` (for example via `google()` and `mavenCentral()` in your project repositories block).
+Make sure your Android repositories can resolve `com.postedapp:posted-sdk` (for example via `google()` and `mavenCentral()` in your project repositories block).
 
 #### iOS
 
@@ -110,6 +112,19 @@ final initial = await sdk.resolveAppLaunch(
 );
 final stream = sdk.linkStream;
 ```
+
+`linkStream` is the SDK's **canonical continuous-event payload**: every event it emits is a
+`PostedResult { bool processed; PostedLink? link }`, where `link` — when present — always carries
+the fully parsed `url`, `route`, `pathname`, `params`, and `type`. `link` is `null` only when the
+event has nothing attributable (e.g. a plain app open). This is the reference shape for continuous
+deep-link delivery across Posted's platform SDKs; React Native's continuous-event stream hoists the
+same parsed link fields (plus a top-level `url`) onto its event payload rather than nesting a
+`PostedLink`, which is a platform-idiomatic wrapper difference, not a divergence in the underlying
+data.
+
+See POS-503 for the cross-platform canonical continuous-event contract, POS-504 for the React
+Native child issue that hoists `url` onto the payload, and POS-502 for the cross-platform
+consistency matrix.
 
 </details>
 
@@ -291,59 +306,79 @@ Low-level bridge API:
 - `Future<void> configure(PostedConfig config)` — sets config without resolving; use when you need to call deprecated shims
 - `Future<PostedResult> resolveInitialLink()` *(deprecated — use `resolveAppLaunch(config)` instead; requires `configure()` to be called first or throws `StateError`)*
 - `Future<PostedResult> processLink(String url)` *(deprecated — use `resolveAppLaunch(config)` instead)*
-- `Stream<PostedResult> get linkStream`
+- `Stream<PostedResult> get linkStream` — canonical continuous-event payload; every emitted `PostedResult.link` (when non-null) carries the fully parsed `PostedLink` (`url`/`route`/`pathname`/`params`/`type`)
 - `Future<void> resetSession()` — re-arms fire-once for the next `resolveAppLaunch` call
 - `Future<void> logEvent(PostedEventName eventName, {Map<String, dynamic>? data})`
 - `Future<void> logRetention(String eventName)`
+
+### Continuous deep-link stream (cross-platform surface)
+
+The **continuous deep-link stream** delivers every link the app receives while it is running (warm links). It is a **separate feature from fire-once install attribution**: `resolveAppLaunch` resolves the single deferred/deep link responsible for the install exactly once (cached thereafter), whereas the continuous stream is unrelated to attribution and emits on every warm link for the life of the process. Use `resolveAppLaunch` for attribution; use the stream (or the native warm-link path below) for ongoing in-session navigation.
+
+The stream is an idiomatic convenience exposed **only on the JS/Dart wrappers**, which already sit on top of a framework-level URL event bus (React Native `Linking`, Flutter `EventChannel`). Native iOS/Android apps deliver warm links through platform lifecycle hooks instead — this divergence is **intentional, not a gap**.
+
+| Platform | Continuous stream API | Status | Warm-link path |
+|----------|----------------------|--------|----------------|
+| Flutter (`PostedSdk`) | `Stream<PostedResult> get linkStream` | ✅ present, non-deprecated (EventChannel-backed) | via `linkStream` |
+| React Native (`Posted`) | `addEventListener("url", listener) → PostedUrlSubscription` | ✅ present, non-deprecated (mirrors RN core `Linking`) | via `addEventListener` |
+| Android (`Posted`) | — none (intentional) — | ➖ not offered | `PostedDelegate.onNewIntent(intent)` → `resolveAppLaunch()` |
+| iOS (`Posted`) | — none (intentional) — | ➖ not offered | Scene/App URL handling (`scene(_:willConnectTo:)`, `openURL`, `continueUserActivity`) → `resolveAppLaunch()` |
+
+**Fire-once vs continuous** — `resolveAppLaunch` fires once per install and returns the attribution result; the continuous stream never participates in attribution and fires on every warm link.
 
 ## Example
 
 A complete integration example covering deferred links, Universal/App Links, and custom scheme links is in [`example/`](./example). See the [example setup guide](./example/README.md) for step-by-step instructions.
 
-## Migration from `detour_flutter_plugin`
+## Migrating from 2.x to 3.0
 
-`detour_flutter_plugin` v1.x has been superseded by `posted_sdk` v2.0.0. The 2.0.0 release is a pure rebrand — no behavioral or API-shape changes — so the upgrade is mechanical. See the [`CHANGELOG`](./CHANGELOG.md) for the full list of breaking changes.
+`posted_sdk` 3.0.0 reshapes the public API around a single **attribution-first** entry point.
+Previously, cold-start attribution required a `configure()` call followed by `resolveInitialLink()`
+(or the runtime-only `processLink(url)`); now a single `resolveAppLaunch(config)` call on `PostedSdk`
+configures the SDK and resolves the launch attribution in one step. `PostedService.start(config)`
+already gives you this and needs no changes.
 
-### 1. Package name
+| Old (2.x)                    | New (3.0)                    | Notes                                     |
+| ----------------------------- | ----------------------------- | ------------------------------------------ |
+| `configure(config)` + `resolveInitialLink()` | `resolveAppLaunch(config)` | Single call; no separate `configure()` needed. See [§1](#1-resolveinitiallink--resolveapplaunchconfig). |
+| `processLink(String url)` *(on `PostedSdk`)* | `resolveAppLaunch(config)` | Deprecated for cold-start attribution only; `PostedService.processLink(url)` is unaffected. See [§2](#2-processlinkstring-url-is-deprecated). |
 
-Update the dependency in your `pubspec.yaml` and your imports:
-
-```yaml
-dependencies:
-  posted_sdk: ^3.0.0   # was: detour_flutter_plugin
-```
+### 1. `resolveInitialLink()` → `resolveAppLaunch(config)`
 
 ```dart
-import 'package:posted_sdk/posted_sdk.dart';   // was: package:detour_flutter_plugin/detour_flutter_plugin.dart
+// Before (deprecated)
+await sdk.configure(config);
+final result = await sdk.resolveInitialLink();
+
+// After
+final result = await sdk.resolveAppLaunch(config);
 ```
 
-### 2. Public symbols
+`resolveAppLaunch` takes `config` directly — no separate `configure()` call is needed first.
 
-All `Detour*` names have `Posted*` equivalents. The old names were available as deprecated typedef/re-export shims throughout the 2.x line and are **removed as of v3.0.0** — code must now use the `Posted*` names. If you are upgrading straight from v1.x, rename using the table below:
+### 2. `processLink(String url)` is deprecated
 
-| v1 name (removed in v3.0.0) | Current (`Posted*`) |
-| --- | --- |
-| `DetourService` | `PostedService` |
-| `DetourFlutterPlugin` | `PostedSdk` |
-| `DetourConfig` | `PostedConfig` |
-| `DetourResult` | `PostedResult` |
-| `DetourLink` | `PostedLink` |
-| `DetourIntent` | `PostedIntent` |
-| `DetourIntentSource` | `PostedIntentSource` |
-| `DetourEventName` | `PostedEventName` |
-| `LinkType` | `PostedLinkType` |
-| `LinkProcessingMode` | `PostedLinkProcessingMode` |
+`PostedSdk.processLink(url)` is deprecated in 3.0.0; use `resolveAppLaunch(config)` for cold-start
+attribution instead. This does **not** affect `PostedService.processLink(url)`, which remains fully
+supported for handling an arbitrary runtime URL (for example a custom scheme link caught while the
+app is already running) — that is a distinct use case from cold-start attribution.
 
-### 3. Platform channels
+Both `resolveInitialLink()` and `processLink()` are kept as deprecated shims for **one release
+cycle** and will be **removed in 4.0** (the next major release).
 
-The underlying method and event channel names were renamed. This is internal to the plugin and requires no change for consumers of the Dart API, but is relevant if you have custom platform code, mocks, or tests that reference the channels directly:
+### 3. No separate `launchContext` parameter on Flutter
 
-| v1 | v2 |
-| --- | --- |
-| method channel `detour_flutter_plugin` | `posted_sdk` |
-| event channel `detour_flutter_plugin/links` | `posted_sdk/links` |
+Unlike the iOS and Android SDKs, `resolveAppLaunch(config)` on Flutter has no separate
+`launchContext` parameter to pass. There is no Dart-side equivalent of native
+`AppDelegate`/`SceneDelegate` launch options — the native layer resolves the launch context
+internally, so `resolveAppLaunch(config)` is the complete call.
 
-The native `pluginClass` (`PostedFlutterPlugin`), the Android package (`com.postedapp.posted`), and the Flutter marker class (`PostedFlutterMarker`) were also renamed as part of the rebrand; these are internal and do not affect Flutter app code.
+### 4. Fire-once semantics
+
+`resolveAppLaunch` caches its result after the first successful call: the native layer persists the
+fire-once flag and the cached result, so the result **survives app updates** — every call after the
+first returns the same cached `PostedResult` for a given install. Only a **reinstall**, or an
+explicit call to `resetSession()`, re-arms it for a fresh resolution.
 
 ---
 

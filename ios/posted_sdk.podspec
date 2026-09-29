@@ -15,7 +15,7 @@ Flutter bridge plugin for posted-sdk deferred deep links and analytics.
   s.source           = { :path => '.' }
   s.source_files     = 'Classes/**/*.swift'
   s.dependency 'Flutter'
-  s.dependency 'Detour', '~> 1.1.0'
+  s.dependency 'PostedSDK', '~> 4.0.0'
   s.platform = :ios, '13.0'
 
   # Flutter.framework does not contain a i386 slice.

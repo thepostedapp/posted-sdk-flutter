@@ -1,9 +1,9 @@
 import Flutter
 import UIKit
-import Detour
+import PostedSDK
 
 public class PostedFlutterPlugin: NSObject, FlutterPlugin, FlutterApplicationLifeCycleDelegate, FlutterSceneLifeCycleDelegate {
-    private var config: DetourConfig?
+    private var config: PostedConfig?
     private var launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     private var eventSink: FlutterEventSink?
     private var pendingRuntimeURLs: [URL] = []
@@ -140,9 +140,8 @@ public class PostedFlutterPlugin: NSObject, FlutterPlugin, FlutterApplicationLif
             let launchOpts = self.launchOptions
             Task { @MainActor [weak self] in
                 guard let self = self else { return }
-                Detour.shared.resolveInitialLink(config: config, launchOptions: launchOpts) { r in
-                    result(self.detourResultToMap(r))
-                }
+                let r = await Posted.shared.resolveAppLaunch(config: config, launchContext: .launchOptions(launchOpts))
+                result(self.postedResultToMap(r))
             }
 
         case "processLink":
@@ -157,8 +156,8 @@ public class PostedFlutterPlugin: NSObject, FlutterPlugin, FlutterApplicationLif
             }
             Task { @MainActor [weak self] in
                 guard let self = self else { return }
-                let r = await Detour.shared.processLink(url, config: config)
-                result(self.detourResultToMap(r))
+                let r = await Posted.shared.processLink(url, config: config)
+                result(self.postedResultToMap(r))
             }
 
         case "logEvent":
@@ -168,12 +167,12 @@ public class PostedFlutterPlugin: NSObject, FlutterPlugin, FlutterApplicationLif
                 return
             }
             let data = args["data"] as? [String: Any]
-            guard let typedEventName = DetourEventName(rawValue: eventName) else {
-                result(FlutterError(code: "UNSUPPORTED_EVENT", message: "Only predefined DetourEventName values are supported", details: nil))
+            guard let typedEventName = PostedEventName(rawValue: eventName) else {
+                result(FlutterError(code: "UNSUPPORTED_EVENT", message: "Only predefined PostedEventName values are supported", details: nil))
                 return
             }
             Task { @MainActor in
-                DetourAnalytics.logEvent(typedEventName, data: data)
+                PostedAnalytics.logEvent(typedEventName, data: data)
             }
             result(nil)
 
@@ -184,7 +183,7 @@ public class PostedFlutterPlugin: NSObject, FlutterPlugin, FlutterApplicationLif
                 return
             }
             Task { @MainActor in
-                DetourAnalytics.logRetention(eventName)
+                PostedAnalytics.logRetention(eventName)
             }
             result(nil)
 
@@ -209,11 +208,18 @@ public class PostedFlutterPlugin: NSObject, FlutterPlugin, FlutterApplicationLif
             let launchOpts = self.launchOptions
             Task { @MainActor [weak self] in
                 guard let self = self else { return }
-                Detour.shared.resolveInitialLink(config: config, launchOptions: launchOpts) { r in
-                    let map = self.detourResultToMap(r)
-                    PostedAttributionCache.save(map, to: UserDefaults.standard)
-                    result(map)
+                let r = await Posted.shared.resolveAppLaunch(config: config, launchContext: .launchOptions(launchOpts))
+                // A genuine network/transport failure must not arm the plugin's fire-once
+                // cache (POS-460/POS-531) — only persist on success or a legitimate
+                // no-match. Mirrors the Android glue's `LinkResult.Error` branch, which
+                // already returns before `save()`.
+                guard !r.resolutionFailed else {
+                    result(FlutterError(code: "NATIVE_ERROR", message: "Attribution resolution failed", details: nil))
+                    return
                 }
+                let map = self.postedResultToMap(r)
+                PostedAttributionCache.save(map, to: UserDefaults.standard)
+                result(map)
             }
 
         case "resetSession":
@@ -227,7 +233,7 @@ public class PostedFlutterPlugin: NSObject, FlutterPlugin, FlutterApplicationLif
 
     // MARK: - Helpers
 
-    private func detourResultToMap(_ r: DetourResult) -> [String: Any?] {
+    private func postedResultToMap(_ r: PostedResult) -> [String: Any?] {
         var map: [String: Any?] = ["processed": r.processed]
         if let link = r.link {
             map["link"] = [
@@ -243,7 +249,7 @@ public class PostedFlutterPlugin: NSObject, FlutterPlugin, FlutterApplicationLif
         return map
     }
 
-    private func configFromArgs(_ args: [String: Any]) -> DetourConfig? {
+    private func configFromArgs(_ args: [String: Any]) -> PostedConfig? {
         guard let apiKey = args["apiKey"] as? String,
               let appID = args["appID"] as? String else { return nil }
         let shouldUseClipboard = args["shouldUseClipboard"] as? Bool ?? true
@@ -254,7 +260,7 @@ public class PostedFlutterPlugin: NSObject, FlutterPlugin, FlutterApplicationLif
         case "deferred-only": mode = .deferredOnly
         default: mode = .all
         }
-        return DetourConfig(
+        return PostedConfig(
             apiKey: apiKey,
             appID: appID,
             shouldUseClipboard: shouldUseClipboard,
@@ -285,7 +291,7 @@ public class PostedFlutterPlugin: NSObject, FlutterPlugin, FlutterApplicationLif
         return false
     }
 
-    private func canProcessRuntimeURL(_ url: URL, with config: DetourConfig) -> Bool {
+    private func canProcessRuntimeURL(_ url: URL, with config: PostedConfig) -> Bool {
         if isInfrastructureURL(url) {
             return false
         }
@@ -322,8 +328,8 @@ public class PostedFlutterPlugin: NSObject, FlutterPlugin, FlutterApplicationLif
 
         Task { @MainActor [weak self] in
             guard let self = self else { return }
-            let result = await Detour.shared.processLink(url, config: config)
-            sink(self.detourResultToMap(result))
+            let result = await Posted.shared.processLink(url, config: config)
+            sink(self.postedResultToMap(result))
         }
     }
 
@@ -339,8 +345,8 @@ public class PostedFlutterPlugin: NSObject, FlutterPlugin, FlutterApplicationLif
 
             Task { @MainActor [weak self] in
                 guard let self = self else { return }
-                let result = await Detour.shared.processLink(url, config: config)
-                sink(self.detourResultToMap(result))
+                let result = await Posted.shared.processLink(url, config: config)
+                sink(self.postedResultToMap(result))
             }
         }
     }

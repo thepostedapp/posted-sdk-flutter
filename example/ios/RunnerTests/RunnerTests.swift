@@ -23,6 +23,23 @@ class RunnerTests: XCTestCase {
 
     waitForExpectations(timeout: 1)
   }
+
+  // NOTE (POS-531): a genuine resolveAppLaunch network failure
+  // (`PostedResult.resolutionFailed == true`) is not exercised here as an
+  // automated test. `PostedResult`'s only `public` initializer is
+  // `init(processed:link:)`, which always yields `resolutionFailed == false`
+  // — the 3-arg initializer and `.failed()` factory that can produce
+  // `resolutionFailed == true` are internal to the `PostedSDK` module, so
+  // this plugin (and its tests) have no way to construct a failing result.
+  // Manual repro instead: force `PostedNetwork` to hit a transport error on
+  // first launch (e.g. airplane mode, or point `PostedConfig` at an
+  // unreachable host) and call `resolveAppLaunch`. Expected: the completion
+  // handler in `PostedFlutterPlugin.swift`'s `"resolveAppLaunch"` case
+  // returns a `FlutterError(code: "NATIVE_ERROR")` (not a success map), and
+  // `PostedAttributionCache.hasValidResolvedCache` remains `false` afterward
+  // — confirming the plugin's fire-once flag was never armed. A second call
+  // (still offline) must attempt another resolution rather than returning a
+  // permanently-empty cached result.
 }
 
 // MARK: - PostedFlutterMarker (POS-274)
@@ -137,6 +154,18 @@ class PostedAttributionCacheTests: XCTestCase {
     for key in PostedAttributionCache.allKeys {
       XCTAssertNil(defaults.object(forKey: key), "expected \(key) to be cleared")
     }
+  }
+
+  func testTornClear_onlyKeyResolvedRemoved_isInvalid() {
+    // Simulate a clear() interrupted after its first removeObject: only
+    // keyResolved (first in allKeys) is gone, keyVersion and the rest of the
+    // blob still linger. hasValidResolvedCache must report false because it
+    // gates on keyResolved first, regardless of what else remains.
+    PostedAttributionCache.save(linkResult(), to: defaults)
+    defaults.removeObject(forKey: PostedAttributionCache.keyResolved)
+
+    XCTAssertFalse(PostedAttributionCache.hasValidResolvedCache(defaults))
+    XCTAssertEqual(defaults.integer(forKey: PostedAttributionCache.keyVersion), PostedAttributionCache.version)
   }
 
   func testNoLinkRoundTrips() {
