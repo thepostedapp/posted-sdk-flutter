@@ -25,7 +25,7 @@ All external links returned `200`:
   `https://developer.apple.com/documentation/bundleresources/privacy_manifest_files`
 
 All internal/relative links resolved (files exist, anchors match actual headings):
-`README.md#migrating-from-2x-to-30`, `README.md#migration-from-detour_flutter_plugin`,
+`README.md#migrating-from-2x-to-30`,
 `README.md#1-resolveinitiallink--resolveapplaunchconfig`,
 `README.md#2-processlinkstring-url-is-deprecated`, `README.md#custom-scheme-for-host-apps`,
 `./example`, `./example/README.md`, `./CHANGELOG.md`, `./LICENSE`,
