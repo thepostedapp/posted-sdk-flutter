@@ -23,6 +23,23 @@ class RunnerTests: XCTestCase {
 
     waitForExpectations(timeout: 1)
   }
+
+  // NOTE (POS-531): a genuine resolveAppLaunch network failure
+  // (`PostedResult.resolutionFailed == true`) is not exercised here as an
+  // automated test. `PostedResult`'s only `public` initializer is
+  // `init(processed:link:)`, which always yields `resolutionFailed == false`
+  // — the 3-arg initializer and `.failed()` factory that can produce
+  // `resolutionFailed == true` are internal to the `PostedSDK` module, so
+  // this plugin (and its tests) have no way to construct a failing result.
+  // Manual repro instead: force `PostedNetwork` to hit a transport error on
+  // first launch (e.g. airplane mode, or point `PostedConfig` at an
+  // unreachable host) and call `resolveAppLaunch`. Expected: the completion
+  // handler in `PostedFlutterPlugin.swift`'s `"resolveAppLaunch"` case
+  // returns a `FlutterError(code: "NATIVE_ERROR")` (not a success map), and
+  // `PostedAttributionCache.hasValidResolvedCache` remains `false` afterward
+  // — confirming the plugin's fire-once flag was never armed. A second call
+  // (still offline) must attempt another resolution rather than returning a
+  // permanently-empty cached result.
 }
 
 // MARK: - PostedAttributionCache (POS-163)
