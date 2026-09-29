@@ -21,12 +21,12 @@ Then run `flutter pub get`.
 
 This plugin uses native Posted SDK implementations:
 
-- Android: `com.swmansion.detour:detour-sdk:1.1.0`
+- Android: `com.postedapp:posted-sdk:4.0.0`
 - iOS: `Detour` CocoaPod `~> 1.1.0` (pulled automatically via the plugin podspec)
 
 #### Android
 
-Make sure your Android repositories can resolve `com.swmansion.detour:detour-sdk` (for example via `google()` and `mavenCentral()` in your project repositories block).
+Make sure your Android repositories can resolve `com.postedapp:posted-sdk` (for example via `google()` and `mavenCentral()` in your project repositories block).
 
 #### iOS
 
