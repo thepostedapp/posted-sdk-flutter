@@ -52,7 +52,10 @@ void main() {
         .map((m) => m.group(1)!)
         .where((h) => h != 'postedapp.com' && !h.endsWith('.postedapp.com'))
         .toSet();
-    expect(foreign, isEmpty,
-        reason: 'Contract may only reference postedapp.com hosts.');
+    expect(
+      foreign,
+      isEmpty,
+      reason: 'Contract may only reference postedapp.com hosts.',
+    );
   });
 }
