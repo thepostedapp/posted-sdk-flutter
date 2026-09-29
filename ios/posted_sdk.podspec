@@ -4,13 +4,13 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'posted_sdk'
-  s.version          = '3.0.0'
+  s.version          = '4.0.0'
   s.summary          = 'Flutter bridge for the posted native SDKs.'
   s.description      = <<-DESC
 Flutter bridge plugin for posted-sdk deferred deep links and analytics.
                        DESC
   s.homepage         = 'https://posted.app'
-  s.license          = { :file => '../LICENSE' }
+  s.license          = { :type => 'MIT' }
   s.author           = { 'Posted' => 'yuriy@postedapp.com' }
   s.source           = { :path => '.' }
   s.source_files     = 'Classes/**/*.swift'
