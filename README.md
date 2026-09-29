@@ -2,6 +2,8 @@
 
 Flutter plugin for mobile attribution and deferred deep linking. `posted_sdk` wraps the native Posted SDKs for Android and iOS, giving Flutter apps access to deferred deep links that survive the Play Store or App Store install flow, along with Universal/App Links and custom scheme links in a single unified API.
 
+> **New to Posted?** Start with the **[cross-platform quickstart](https://github.com/thepostedapp/posted-sdk-admin/blob/main/GETTING-STARTED.md)** — create an app, copy your credentials, install the SDK, initialize it, and verify, all in one place. This README is the full Flutter reference.
+
 Upgrading from an earlier version? See [Migrating from 2.x to 3.0](#migrating-from-2x-to-30).
 
 ## Installation
