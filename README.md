@@ -352,6 +352,8 @@ enum PostedEventName {
 
 ## API Reference
 
+Full generated API reference (dartdoc, built from source doc comments): hosted copy not yet live <!-- TODO(POS-590): link once the generated reference is hosted -->. CI (`dart doc .`) regenerates and fails the build on any generation error, so it never drifts from source. Build it locally with `dart doc .` and open `doc/api/index.html`. The tables below are a quick-reference summary of the same public surface.
+
 ### `PostedService`
 
 High-level integration helper (extends `ChangeNotifier`):
