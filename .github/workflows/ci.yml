@@ -21,3 +21,12 @@ jobs:
         with: { channel: stable }
       - run: flutter pub get
       - run: flutter test
+  docs:                         # POS-619: dart doc is the anti-drift guard — fails the build if API doc comments don't generate
+    needs: static
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable }
+      - run: flutter pub get
+      - run: dart doc .
