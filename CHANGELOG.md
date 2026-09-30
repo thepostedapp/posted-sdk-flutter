@@ -2,7 +2,7 @@
 
 First public release under the `posted_sdk` / Posted brand, and the **attribution-first reshape** of
 the public API: the primary entry point is now `configure` + `resolveAppLaunch` (+ optional
-`logEvent`/`logRetention`). See [Migrating from 2.x to 3.0](./README.md#migrating-from-2x-to-30) for
+`logEvent`/`logRetention`). See [Migration](./README.md#migration) for
 upgrade steps.
 
 ### Added

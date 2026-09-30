@@ -2,11 +2,19 @@
 
 Flutter plugin for mobile attribution and deferred deep linking. `posted_sdk` wraps the native Posted SDKs for Android and iOS, giving Flutter apps access to deferred deep links that survive the Play Store or App Store install flow, along with Universal/App Links and custom scheme links in a single unified API.
 
-> **New to Posted?** Start with the **[cross-platform quickstart](https://github.com/thepostedapp/posted-sdk-admin/blob/main/GETTING-STARTED.md)** — create an app, copy your credentials, install the SDK, initialize it, and verify, all in one place. This README is the full Flutter reference.
+## Quick links
 
-Upgrading from an earlier version? See [Migrating from 2.x to 3.0](#migrating-from-2x-to-30).
+- **Getting-Started guide** (cross-platform golden path — create an app, install, verify): [GETTING-STARTED.md](https://github.com/thepostedapp/posted-sdk-admin/blob/main/GETTING-STARTED.md). This README is the full Flutter reference.
+- **API host**: `attr.postedapp.com` (the SDK targets this by default — you do not configure it). Deep links resolve via `l.postedapp.com`.
+- **Troubleshooting**: [TROUBLESHOOTING.md](https://github.com/thepostedapp/posted-sdk-admin/blob/main/TROUBLESHOOTING.md)
+- **Backend contract redoc**: not yet live <!-- TODO(POS-589): link once the contract redoc is hosted — Firebase Hosting activation is gated on the POS-312 D1/D2 DNS decision -->
+- **Support**: see [Support](#support) below
 
-## Installation
+## Create account
+
+You need a posted-sdk account to generate app credentials (`app_id` + API key) and configure your links. Follow [**Create an app & find your credentials**](https://github.com/thepostedapp/posted-sdk-admin/blob/main/README.md#create-an-app--find-your-credentials) in the dashboard README — it covers the full create-app flow and where each credential appears afterward.
+
+## Install
 
 ### Package
 
@@ -40,14 +48,108 @@ cd ios && pod install && cd ..
 
 ### Requirements
 
-- Dart: `^3.11.1`
-- Flutter: `>=3.3.0`
 - Android: min SDK 24
 - iOS: 13.0+
 
-## Usage
+## Quickstart
 
-### Recommended: `PostedService`
+The fastest way to get attribution working: use `PostedService`, call `start(config)`, and read `pendingIntent` (see [Deep-link handling](#deep-link-handling) for the full listener pattern). If you don't need `ChangeNotifier` semantics, call `resolveAppLaunch` directly on `PostedSdk` instead.
+
+### Minimal init (PostedService)
+
+```dart
+import 'package:posted_sdk/posted_sdk.dart';
+
+final posted = PostedService();
+
+await posted.start(
+  const PostedConfig(
+    apiKey: '<YOUR_API_KEY>',
+    appID: '<YOUR_APP_ID>',
+  ),
+);
+```
+
+### Minimal `resolveAppLaunch()` call (no service)
+
+```dart
+import 'package:posted_sdk/posted_sdk.dart';
+
+final sdk = PostedSdk();
+
+final result = await sdk.resolveAppLaunch(
+  const PostedConfig(
+    apiKey: '<YOUR_API_KEY>',
+    appID: '<YOUR_APP_ID>',
+  ),
+);
+```
+
+See [resolveAppLaunch](#resolveapplaunch) below for fire-once semantics.
+
+## Configure
+
+`PostedConfig` accepts:
+
+- **`apiKey`** / **`appID`** — your app credentials from the posted-sdk dashboard (see [Create account](#create-account)).
+- **`shouldUseClipboard`** — iOS-only clipboard check for deferred-link matching, defaults to `true`. Android always uses the install referrer instead; clipboard is never accessed there regardless of this setting.
+- **`linkProcessingMode`** — controls which link sources the SDK handles (`PostedLinkProcessingMode.all` | `.webOnly` | `.deferredOnly`, default `.all`). See [Deep-link handling](#link-processing-mode) for the full behavior table.
+
+See [Types → PostedConfig](#postedconfig) for the full type definition.
+
+## resolveAppLaunch
+
+```dart
+Future<PostedResult> resolveAppLaunch(PostedConfig config)
+```
+
+The single unified cold-start attribution entry point on `PostedSdk`. `PostedService.start(config)` calls this internally, so most apps never call it directly.
+
+- **Fire-once per install**: the first call performs one network resolution and caches the result. The native layer persists the fire-once flag and the cached result, so it **survives app updates** — every call after the first returns the same cached `PostedResult` for a given install.
+- **Re-arms** on a reinstall, or an explicit `resetSession()` call.
+- Takes `config` directly — no separate `configure()` call is needed first.
+
+### resetSession
+
+```dart
+Future<void> resetSession()
+```
+
+Re-arms the fire-once resolution so the next `resolveAppLaunch()` call performs a fresh network resolution. Designed for explicit logout/reinstall flows, QA, and testing.
+
+<details>
+<summary>PostedSdk example</summary>
+
+```dart
+import 'package:posted_sdk/posted_sdk.dart';
+
+final sdk = PostedSdk();
+
+final initial = await sdk.resolveAppLaunch(
+  const PostedConfig(
+    apiKey: '<YOUR_API_KEY>',
+    appID: '<YOUR_APP_ID>',
+  ),
+);
+final stream = sdk.linkStream;
+```
+
+`linkStream` is the SDK's **canonical continuous-event payload**: every event it emits is a
+`PostedResult { bool processed; PostedLink? link }`, where `link` — when present — always carries
+the fully parsed `url`, `route`, `pathname`, `params`, and `type`. `link` is `null` only when the
+event has nothing attributable (e.g. a plain app open). This is the reference shape for continuous
+deep-link delivery across Posted's platform SDKs; React Native's continuous-event stream hoists the
+same parsed link fields (plus a top-level `url`) onto its event payload rather than nesting a
+`PostedLink`, which is a platform-idiomatic wrapper difference, not a divergence in the underlying
+data.
+
+See POS-503 for the cross-platform canonical continuous-event contract, POS-504 for the React
+Native child issue that hoists `url` onto the payload, and POS-502 for the cross-platform
+consistency matrix.
+
+</details>
+
+## Deep-link handling
 
 `PostedService` is the recommended integration layer. It extends `ChangeNotifier` and merges initial and runtime link handling into a single pending intent with explicit consume semantics.
 
@@ -94,51 +196,15 @@ void dispose() {
 
 </details>
 
-### Low-level API: `PostedSdk`
-
-For full manual control, use `PostedSdk` directly:
-
-<details>
-<summary>PostedSdk example</summary>
-
-```dart
-import 'package:posted_sdk/posted_sdk.dart';
-
-final sdk = PostedSdk();
-
-final initial = await sdk.resolveAppLaunch(
-  const PostedConfig(
-    apiKey: '<YOUR_API_KEY>',
-    appID: '<YOUR_APP_ID>',
-  ),
-);
-final stream = sdk.linkStream;
-```
-
-`linkStream` is the SDK's **canonical continuous-event payload**: every event it emits is a
-`PostedResult { bool processed; PostedLink? link }`, where `link` — when present — always carries
-the fully parsed `url`, `route`, `pathname`, `params`, and `type`. `link` is `null` only when the
-event has nothing attributable (e.g. a plain app open). This is the reference shape for continuous
-deep-link delivery across Posted's platform SDKs; React Native's continuous-event stream hoists the
-same parsed link fields (plus a top-level `url`) onto its event payload rather than nesting a
-`PostedLink`, which is a platform-idiomatic wrapper difference, not a divergence in the underlying
-data.
-
-See POS-503 for the cross-platform canonical continuous-event contract, POS-504 for the React
-Native child issue that hoists `url` onto the payload, and POS-502 for the cross-platform
-consistency matrix.
-
-</details>
-
 ### Link processing mode
 
 Use `linkProcessingMode` to control which link sources the SDK handles:
 
 | Value                                    | Universal/App links | Deferred links | Custom scheme links |
-| ---------------------------------------- | ------------------- | -------------- | ------------------- |
-| `PostedLinkProcessingMode.all` (default) | ✅                  | ✅             | ✅                  |
-| `PostedLinkProcessingMode.webOnly`       | ✅                  | ✅             | ❌                  |
-| `PostedLinkProcessingMode.deferredOnly`  | ❌                  | ✅             | ❌                  |
+| ---------------------------------------- | -------------------- | --------------- | --------------------- |
+| `PostedLinkProcessingMode.all` (default) | ✅                    | ✅              | ✅                    |
+| `PostedLinkProcessingMode.webOnly`       | ✅                    | ✅              | ❌                    |
+| `PostedLinkProcessingMode.deferredOnly`  | ❌                    | ✅              | ❌                    |
 
 ### Custom scheme runtime links
 
@@ -328,11 +394,11 @@ The stream is an idiomatic convenience exposed **only on the JS/Dart wrappers**,
 
 **Fire-once vs continuous** — `resolveAppLaunch` fires once per install and returns the attribution result; the continuous stream never participates in attribution and fires on every warm link.
 
-## Example
+## Errors/Troubleshooting
 
-A complete integration example covering deferred links, Universal/App Links, and custom scheme links is in [`example/`](./example). See the [example setup guide](./example/README.md) for step-by-step instructions.
+See the canonical [Troubleshooting & error-code reference](https://github.com/thepostedapp/posted-sdk-admin/blob/main/TROUBLESHOOTING.md) — 401s, no-match, deferred deep links not firing, iOS clipboard / Android install-referrer edge cases, and key rotation, each with cause → how to detect → fix.
 
-## Migrating from 2.x to 3.0
+## Migration
 
 `posted_sdk` 3.0.0 reshapes the public API around a single **attribution-first** entry point.
 Previously, cold-start attribution required a `configure()` call followed by `resolveInitialLink()`
@@ -382,5 +448,25 @@ fire-once flag and the cached result, so the result **survives app updates** —
 first returns the same cached `PostedResult` for a given install. Only a **reinstall**, or an
 explicit call to `resetSession()`, re-arms it for a fresh resolution.
 
----
+## Versioning/compatibility
 
+- **SDK version**: `4.0.0` (aligned across iOS/Android/React Native/Flutter)
+- **Backend contract**: v1.1.0, served from `attr.postedapp.com`
+- **Dart**: `^3.11.1` · **Flutter**: `>=3.3.0` (see `environment` in [`pubspec.yaml`](./pubspec.yaml))
+- **Cross-platform compatibility matrix**: [COMPATIBILITY.md](https://github.com/thepostedapp/posted-sdk-admin/blob/main/COMPATIBILITY.md)
+
+## Example
+
+A complete integration example covering deferred links, Universal/App Links, and custom scheme links is in [`example/`](./example). See the [example setup guide](./example/README.md) for step-by-step instructions.
+
+## Support
+
+- Found a bug or have a question specific to this SDK? [Open an issue](https://github.com/thepostedapp/posted-sdk-flutter/issues) on this repo.
+
+### Other posted-sdk SDKs
+
+posted-sdk is also available for other app stacks:
+
+- Android SDK: [https://github.com/thepostedapp/posted-sdk-android](https://github.com/thepostedapp/posted-sdk-android)
+- iOS SDK: [https://github.com/thepostedapp/posted-sdk-ios](https://github.com/thepostedapp/posted-sdk-ios)
+- React Native SDK: [https://github.com/thepostedapp/posted-sdk-react-native](https://github.com/thepostedapp/posted-sdk-react-native)
