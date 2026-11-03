@@ -31,7 +31,7 @@ jobs:
   ios-native-resolver:
     # Enabled via the repo variable POSTEDSDK_POD_AVAILABLE=true (PostedSDK 1.0.0 is on CocoaPods trunk).
     if: ${{ vars.POSTEDSDK_POD_AVAILABLE == 'true' }}
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
