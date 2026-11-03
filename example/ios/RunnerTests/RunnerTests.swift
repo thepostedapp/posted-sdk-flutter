@@ -55,19 +55,26 @@ class PostedFlutterMarkerTests: XCTestCase {
   }
 
   private static func pubspecVersion() throws -> String {
+    // Walk up to the plugin's own pubspec (name: posted_sdk); the example app's pubspec sits
+    // closer on the path and carries a build number (1.0.0+1) that is not part of the marker.
     var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-    let fileManager = FileManager.default
-    while !fileManager.fileExists(atPath: dir.appendingPathComponent("pubspec.yaml").path) {
+    var pubspec: String? = nil
+    while pubspec == nil {
+      let candidate = dir.appendingPathComponent("pubspec.yaml")
+      if let text = try? String(contentsOf: candidate, encoding: .utf8),
+         text.split(separator: "\n").contains(where: { $0.trimmingCharacters(in: .whitespaces) == "name: posted_sdk" }) {
+        pubspec = text
+        break
+      }
       let parent = dir.deletingLastPathComponent()
       guard parent.path != dir.path else {
         throw NSError(domain: "PostedFlutterMarkerTests", code: 1, userInfo: [
-          NSLocalizedDescriptionKey: "Failed to locate repo root containing pubspec.yaml",
+          NSLocalizedDescriptionKey: "Failed to locate the posted_sdk pubspec.yaml",
         ])
       }
       dir = parent
     }
-
-    let pubspec = try String(contentsOf: dir.appendingPathComponent("pubspec.yaml"), encoding: .utf8)
+    guard let pubspec else { throw NSError(domain: "PostedFlutterMarkerTests", code: 1) }
     guard let line = pubspec.split(separator: "\n").first(where: { $0.hasPrefix("version:") }) else {
       throw NSError(domain: "PostedFlutterMarkerTests", code: 2, userInfo: [
         NSLocalizedDescriptionKey: "Failed to find version: line in pubspec.yaml",
