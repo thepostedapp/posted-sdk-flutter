@@ -38,8 +38,10 @@ jobs:
         with: { channel: stable }
       - run: flutter pub get
         working-directory: example
-      - run: pod install
-        working-directory: example/ios
+      # Builds through Flutter so the plugin registrant, pods and Flutter.framework are all set
+      # up the way a real app build does; a bare `pod install` + xcodebuild is not enough.
+      - run: flutter build ios --simulator --no-codesign --debug
+        working-directory: example
       - name: Run PostedFlutterMarker XCTest (real NSClassFromString resolver)
         run: |
           xcodebuild test \
