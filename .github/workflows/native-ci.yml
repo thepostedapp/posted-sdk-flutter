@@ -29,17 +29,7 @@ jobs:
         working-directory: example/android
 
   ios-native-resolver:
-    # Gated until PostedSDK is resolvable by CocoaPods.
-    #
-    # pod install resolves `s.dependency PostedSDK` against trunk, where the pod is not yet
-    # published (board hold on repo visibility, POS-572), and the example Podfile's git override
-    # points at thepostedapp/posted-sdk-ios which is private, so an unauthenticated runner cannot
-    # clone it either. The job fails on dependency resolution, not on anything this repo controls.
-    #
-    # Deliberately SKIPPED rather than continue-on-error: a skipped job is honest, whereas
-    # continue-on-error reports green while proving nothing. Set the repo variable
-    # POSTEDSDK_POD_AVAILABLE to "true" once the pod is on trunk (or the repo is public) to
-    # re-enable this job.
+    # Enabled via the repo variable POSTEDSDK_POD_AVAILABLE=true (PostedSDK 1.0.0 is on CocoaPods trunk).
     if: ${{ vars.POSTEDSDK_POD_AVAILABLE == 'true' }}
     runs-on: macos-14
     steps:
@@ -55,6 +45,6 @@ jobs:
           xcodebuild test \
             -workspace Runner.xcworkspace \
             -scheme Runner \
-            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
             -only-testing:RunnerTests/PostedFlutterMarkerTests
         working-directory: example/ios

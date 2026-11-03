@@ -1,5 +1,5 @@
 group = "com.postedapp.posted"
-version = "4.0.0"
+version = "1.0.0"
 
 buildscript {
     val kotlinVersion = "2.2.20"
@@ -28,6 +28,8 @@ plugins {
 
 android {
     namespace = "com.postedapp.posted"
+    // Read by the native SDK through PostedFlutterMarker, so installs are attributed to the
+    // Flutter SDK. `version` above must equal the version in pubspec.yaml.
     val flutterSdkHeaderValue = "flutter/$version"
 
     compileSdk = 36
@@ -77,7 +79,7 @@ android {
 }
 
 dependencies {
-    implementation("com.postedapp:posted-sdk:4.0.0")
+    implementation("com.postedapp:posted-sdk:1.0.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.mockito:mockito-core:5.0.0")

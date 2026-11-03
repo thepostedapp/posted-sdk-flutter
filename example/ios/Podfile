@@ -30,10 +30,6 @@ flutter_ios_podfile_setup
 target 'Runner' do
   use_frameworks!
 
-  # PostedSDK isn't published to CocoaPods trunk yet (public go-live tracked separately in
-  # POS-110), so source it directly from its tagged release to satisfy posted_sdk.podspec's
-  # `PostedSDK ~> 4.0.0` dependency without needing trunk.
-  pod 'PostedSDK', git: 'https://github.com/thepostedapp/posted-sdk-ios.git', tag: '4.0.0'
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
   target 'RunnerTests' do

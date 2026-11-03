@@ -1,0 +1,89 @@
+name: Publish
+
+# Publishes posted_sdk to pub.dev on every version tag.
+#
+# Tag format is the bare version (`1.0.0`, no `v`), matching the other Posted SDKs. The tag must
+# equal `version` in pubspec.yaml. pub.dev versions are permanent (a version can be retracted
+# within 7 days but never replaced), so bump the version for every release.
+#
+# Authentication is pub.dev automated publishing with GitHub Actions OIDC: no secret is stored
+# here. It must be enabled once on https://pub.dev/packages/posted_sdk/admin (Automated
+# publishing → GitHub Actions, repository thepostedapp/posted-sdk-flutter, tag pattern
+# `{{version}}`), which requires the package to already exist on pub.dev. The very first version
+# is published by hand with `flutter pub publish`.
+
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Existing tag to publish (e.g. 1.0.0)"
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # pub.dev OIDC
+      contents: write # creates the GitHub Release
+    concurrency:
+      group: publish-${{ github.ref }}
+      cancel-in-progress: false
+
+    steps:
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.version.outputs.version }}
+
+      - name: Check versions match the tag
+        run: |
+          v="${{ steps.version.outputs.version }}"
+          pub_v=$(sed -nE 's/^version: *(\S+).*/\1/p' pubspec.yaml)
+          pod_v=$(sed -nE "s/^ *s\.version *= *'([^']+)'.*/\1/p" ios/posted_sdk.podspec)
+          gradle_v=$(sed -nE 's/^version = "([^"]+)".*/\1/p' android/build.gradle.kts)
+          marker_v=$(sed -nE 's/.*sdkHeaderValue = "flutter\/([^"]+)".*/\1/p' ios/Classes/PostedFlutterMarker.swift)
+          echo "tag=$v pubspec=$pub_v podspec=$pod_v gradle=$gradle_v iosMarker=$marker_v"
+          for x in "$pub_v" "$pod_v" "$gradle_v" "$marker_v"; do
+            [ "$x" = "$v" ] || { echo "::error::version $x != tag $v"; exit 1; }
+          done
+
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable }
+
+      - name: Skip if already on pub.dev
+        id: exists
+        run: |
+          v="${{ steps.version.outputs.version }}"
+          if curl -sf "https://pub.dev/api/packages/posted_sdk" | python3 -c "import sys,json; sys.exit(0 if any(x['version']=='$v' for x in json.load(sys.stdin)['versions']) else 1)"; then
+            echo "posted_sdk $v is already on pub.dev; skipping publish"
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to pub.dev
+        if: steps.exists.outputs.published == 'false'
+        run: |
+          flutter pub get
+          flutter pub publish --force
+
+      - name: Create GitHub Release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v="${{ steps.version.outputs.version }}"
+          gh release view "$v" >/dev/null 2>&1 && exit 0
+          gh release create "$v" --title "$v" --notes "posted_sdk $v on pub.dev: \`flutter pub add posted_sdk\`."

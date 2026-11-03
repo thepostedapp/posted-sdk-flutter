@@ -24,20 +24,6 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
-	<!-- Custom scheme links (works with LinkProcessingMode.all). -->
-	<!-- `posted` is the Posted SDK example scheme; replace with your
-	     app-specific scheme in your own app. -->
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLName</key>
-			<string>com.example.postedSdkExample</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>posted</string>
-			</array>
 		</dict>
 	</array>
 	<key>LSRequiresIPhoneOS</key>

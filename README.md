@@ -1,474 +1,113 @@
 # posted_sdk
 
-Flutter plugin for mobile attribution and deferred deep linking. `posted_sdk` wraps the native Posted SDKs for Android and iOS, giving Flutter apps access to deferred deep links that survive the Play Store or App Store install flow, along with Universal/App Links and custom scheme links in a single unified API.
+`posted_sdk` reports app installs to Posted. The backend matches each install to the ad click that led to it and reports it back to the ad network as a conversion.
 
-## Quick links
+The SDK has one function, `Posted.reportInstall()`. Call it on every app launch. It sends the report once per install.
 
-- **Getting-Started guide** (cross-platform golden path — create an app, install, verify): [GETTING-STARTED.md](https://github.com/thepostedapp/posted-sdk-admin/blob/main/GETTING-STARTED.md). This README is the full Flutter reference.
-- **API host**: `attr.postedapp.com` (the SDK targets this by default — you do not configure it). Deep links resolve via `l.postedapp.com`.
-- **Troubleshooting**: [TROUBLESHOOTING.md](https://github.com/thepostedapp/posted-sdk-admin/blob/main/TROUBLESHOOTING.md)
-- **Backend contract redoc**: not yet live <!-- TODO(POS-589): link once the contract redoc is hosted — Firebase Hosting activation is gated on the POS-312 D1/D2 DNS decision -->
-- **Support**: see [Support](#support) below
+- [Requirements](#requirements)
+- [Get your app ID and API key](#get-your-app-id-and-api-key)
+- [1. Install](#1-install)
+- [2. Report the install](#2-report-the-install)
+- [3. Verify the integration](#3-verify-the-integration)
+- [Configuration](#configuration)
+- [Data collected](#data-collected)
+- [Troubleshooting](#troubleshooting)
+- [Support](#support)
 
-## Create account
+## Requirements
 
-You need a posted-sdk account to generate app credentials (`app_id` + API key) and configure your links. Follow [**Create an app & find your credentials**](https://github.com/thepostedapp/posted-sdk-admin/blob/main/README.md#create-an-app--find-your-credentials) in the dashboard README — it covers the full create-app flow and where each credential appears afterward.
+- Flutter 3.24+ / Dart 3.5+
+- iOS 13.0+, Android 7.0+ (API 24)
+- The plugin wraps the native Posted SDKs: `PostedSDK` 1.0.0 on iOS (CocoaPods) and `com.postedapp:posted-sdk` 1.0.0 on Android (Maven Central). Both are pulled in automatically. On web and desktop the SDK does nothing.
 
-## Install
+## Get your app ID and API key
 
-### Package
+Both come from the Posted dashboard at [app.postedapp.com/dashboard/settings](https://app.postedapp.com/dashboard/settings), under **Posted SDK**.
 
-Add the package to your `pubspec.yaml`:
+1. Under **Apps**, click **Add app**, fill in the form and submit it. The dashboard generates the **app ID** (`app_…`) for the new app.
+2. Under **API keys**, click **Create key**. Copy the key when it is shown; it is not displayed again.
 
-```yaml
-dependencies:
-  posted_sdk: ^4.0.0
-```
+Pass these as `appID` and `apiKey` in `PostedConfig`. One API key works for all apps in your account.
 
-Then run `flutter pub get`.
-
-### Native SDK dependencies
-
-This plugin uses native Posted SDK implementations:
-
-- Android: `com.postedapp:posted-sdk:4.0.0`
-- iOS: `PostedSDK` CocoaPod `~> 4.0.0` (pulled automatically via the plugin podspec)
-
-#### Android
-
-Make sure your Android repositories can resolve `com.postedapp:posted-sdk` (for example via `google()` and `mavenCentral()` in your project repositories block).
-
-#### iOS
-
-The native iOS SDK is resolved automatically as a CocoaPods dependency. Just run:
+## 1. Install
 
 ```sh
-cd ios && pod install && cd ..
+flutter pub add posted_sdk
 ```
 
-### Requirements
+Then rebuild the native app (`flutter run`). On iOS, `pod install` runs as part of the build.
 
-- Android: min SDK 24
-- iOS: 13.0+
+## 2. Report the install
 
-## Quickstart
-
-The fastest way to get attribution working: use `PostedService`, call `start(config)`, and read `pendingIntent` (see [Deep-link handling](#deep-link-handling) for the full listener pattern). If you don't need `ChangeNotifier` semantics, call `resolveAppLaunch` directly on `PostedSdk` instead.
-
-### Minimal init (PostedService)
+Call `Posted.reportInstall()` once per launch, as early as possible: in `main()` before `runApp`, or in your root widget's `initState`.
 
 ```dart
 import 'package:posted_sdk/posted_sdk.dart';
 
-final posted = PostedService();
-
-await posted.start(
-  const PostedConfig(
-    apiKey: '<YOUR_API_KEY>',
-    appID: '<YOUR_APP_ID>',
-  ),
-);
-```
-
-### Minimal `resolveAppLaunch()` call (no service)
-
-```dart
-import 'package:posted_sdk/posted_sdk.dart';
-
-final sdk = PostedSdk();
-
-final result = await sdk.resolveAppLaunch(
-  const PostedConfig(
-    apiKey: '<YOUR_API_KEY>',
-    appID: '<YOUR_APP_ID>',
-  ),
-);
-```
-
-See [resolveAppLaunch](#resolveapplaunch) below for fire-once semantics.
-
-## Configure
-
-`PostedConfig` accepts:
-
-- **`apiKey`** / **`appID`** — your app credentials from the posted-sdk dashboard (see [Create account](#create-account)).
-- **`shouldUseClipboard`** — iOS-only clipboard check for deferred-link matching, defaults to `true`. Android always uses the install referrer instead; clipboard is never accessed there regardless of this setting.
-- **`linkProcessingMode`** — controls which link sources the SDK handles (`PostedLinkProcessingMode.all` | `.webOnly` | `.deferredOnly`, default `.all`). See [Deep-link handling](#link-processing-mode) for the full behavior table.
-
-See [Types → PostedConfig](#postedconfig) for the full type definition.
-
-## resolveAppLaunch
-
-```dart
-Future<PostedResult> resolveAppLaunch(PostedConfig config)
-```
-
-The single unified cold-start attribution entry point on `PostedSdk`. `PostedService.start(config)` calls this internally, so most apps never call it directly.
-
-- **Fire-once per install**: the first call performs one network resolution and caches the result. The native layer persists the fire-once flag and the cached result, so it **survives app updates** — every call after the first returns the same cached `PostedResult` for a given install.
-- **Re-arms** on a reinstall, or an explicit `resetSession()` call.
-- Takes `config` directly — no separate `configure()` call is needed first.
-
-### resetSession
-
-```dart
-Future<void> resetSession()
-```
-
-Re-arms the fire-once resolution so the next `resolveAppLaunch()` call performs a fresh network resolution. Designed for explicit logout/reinstall flows, QA, and testing.
-
-<details>
-<summary>PostedSdk example</summary>
-
-```dart
-import 'package:posted_sdk/posted_sdk.dart';
-
-final sdk = PostedSdk();
-
-final initial = await sdk.resolveAppLaunch(
-  const PostedConfig(
-    apiKey: '<YOUR_API_KEY>',
-    appID: '<YOUR_APP_ID>',
-  ),
-);
-final stream = sdk.linkStream;
-```
-
-`linkStream` is the SDK's **canonical continuous-event payload**: every event it emits is a
-`PostedResult { bool processed; PostedLink? link }`, where `link` — when present — always carries
-the fully parsed `url`, `route`, `pathname`, `params`, and `type`. `link` is `null` only when the
-event has nothing attributable (e.g. a plain app open). This is the reference shape for continuous
-deep-link delivery across Posted's platform SDKs; React Native's continuous-event stream hoists the
-same parsed link fields (plus a top-level `url`) onto its event payload rather than nesting a
-`PostedLink`, which is a platform-idiomatic wrapper difference, not a divergence in the underlying
-data.
-
-See POS-503 for the cross-platform canonical continuous-event contract, POS-504 for the React
-Native child issue that hoists `url` onto the payload, and POS-502 for the cross-platform
-consistency matrix.
-
-</details>
-
-## Deep-link handling
-
-`PostedService` is the recommended integration layer. It extends `ChangeNotifier` and merges initial and runtime link handling into a single pending intent with explicit consume semantics.
-
-<details>
-<summary>PostedService example</summary>
-
-```dart
-import 'package:posted_sdk/posted_sdk.dart';
-
-final posted = PostedService();
-
-@override
-void initState() {
-  super.initState();
-  posted.addListener(_onPostedChanged);
-  _startPosted();
-}
-
-Future<void> _startPosted() async {
-  await posted.start(
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  Posted.reportInstall(
     const PostedConfig(
       apiKey: '<YOUR_API_KEY>',
       appID: '<YOUR_APP_ID>',
     ),
   );
-}
-
-void _onPostedChanged() {
-  final intent = posted.pendingIntent;
-  if (intent == null) return;
-
-  // Navigate once, then mark as consumed.
-  // context.go(intent.link.route);
-  posted.consumePendingIntent();
-}
-
-@override
-void dispose() {
-  posted.removeListener(_onPostedChanged);
-  posted.dispose();
-  super.dispose();
+  runApp(const MyApp());
 }
 ```
 
-</details>
+You don't need to `await` it. It never throws, and it doesn't block app startup.
 
-### Link processing mode
+## 3. Verify the integration
 
-Use `linkProcessingMode` to control which link sources the SDK handles:
+1. Run the app with a **fresh install**. Uninstalling clears the SDK's storage, so a reinstall reports again.
+2. Watch the native logs. On Android, filter Logcat by the `PostedApiClient` tag; on iOS, filter Console by the `com.postedapp.posted` subsystem. On success you'll see `Install reported`. On failure, a line starting with `[Posted:INSTALL_ERROR]` (see [Troubleshooting](#troubleshooting)).
 
-| Value                                    | Universal/App links | Deferred links | Custom scheme links |
-| ---------------------------------------- | -------------------- | --------------- | --------------------- |
-| `PostedLinkProcessingMode.all` (default) | ✅                    | ✅              | ✅                    |
-| `PostedLinkProcessingMode.webOnly`       | ✅                    | ✅              | ❌                    |
-| `PostedLinkProcessingMode.deferredOnly`  | ❌                    | ✅              | ❌                    |
-
-### Custom scheme runtime links
-
-Custom scheme links require `linkProcessingMode: PostedLinkProcessingMode.all` and native registration on each platform.
-
-<details>
-<summary>Native registration</summary>
-
-Android (`AndroidManifest.xml`):
-
-```xml
-<intent-filter>
-  <action android:name="android.intent.action.VIEW" />
-  <category android:name="android.intent.category.DEFAULT" />
-  <category android:name="android.intent.category.BROWSABLE" />
-  <data android:scheme="myapp" />
-</intent-filter>
-```
-
-iOS (`Info.plist`):
-
-```xml
-<key>CFBundleURLTypes</key>
-<array>
-  <dict>
-    <key>CFBundleURLSchemes</key>
-    <array>
-      <string>myapp</string>
-    </array>
-  </dict>
-</array>
-```
-
-Test commands:
-
-```sh
-# Android
-adb shell am start -a android.intent.action.VIEW \
-  -d "myapp://products/42?source=scheme" \
-  <your.package.name>
-
-# iOS Simulator
-xcrun simctl openurl booted "myapp://products/42?source=scheme"
-```
-
-</details>
-
-## Analytics
-
-<details>
-<summary>Analytics example</summary>
+## Configuration
 
 ```dart
-await posted.logEvent(
-  PostedEventName.purchase,
-  data: {'value': 9.99, 'currency': 'USD'},
-);
-
-await posted.logRetention('week_1');
+Posted.reportInstall(PostedConfig config) → Future<void>
 ```
 
-</details>
+| Field    | Type     | Required | Description                                            |
+| -------- | -------- | -------- | ------------------------------------------------------ |
+| `apiKey` | `String` | Yes      | API key from the dashboard, **Posted SDK → API keys**. |
+| `appID`  | `String` | Yes      | App ID from the dashboard, **Posted SDK → Apps**.      |
 
-## Types
+The native SDKs store two keys, both prefixed with `Posted_`: the "install reported" flag and a device ID. If the app is uninstalled and reinstalled, the install is reported again.
 
-### `PostedConfig`
+## Data collected
 
-<details>
-<summary>PostedConfig</summary>
+The install report is one `POST` to `attr.postedapp.com/api/install`, sent once per install by the native SDK. The backend uses the fields below to match the install to an earlier ad click on the same device.
 
-```dart
-class PostedConfig {
-  final String apiKey;
-  final String appID;
-  final bool shouldUseClipboard;                   // default: true
-  final PostedLinkProcessingMode linkProcessingMode; // default: PostedLinkProcessingMode.all
-}
-```
+| Field                                    | Source                                                             |
+| ---------------------------------------- | ------------------------------------------------------------------ |
+| `platform`                               | `ios` or `android`                                                 |
+| `model`, `manufacturer`, `systemVersion` | `UIDevice` on iOS, `android.os.Build` on Android                   |
+| `screenWidth`, `screenHeight`, `scale`   | Screen size in points / dp and the display scale                   |
+| `locale`, `timezone`                     | The device's preferred language and current time zone              |
+| `userAgent`                              | `WKWebView` user agent on iOS, the `http.agent` property on Android |
+| `timestamp`                              | Current time in milliseconds                                       |
+| `device_id`                              | A random UUID generated once per install                           |
+| `clickId`                                | Android only: `click_id` from the Play install referrer, when present |
 
-</details>
+The SDK never reads the clipboard, never collects the IDFA or advertising ID, and does not request App Tracking Transparency permission.
 
-### `PostedIntent`
+## Troubleshooting
 
-<details>
-<summary>PostedIntent</summary>
+| Log line                                                   | Meaning                                                                                              |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `Install reported`                                         | Success. Nothing more is sent for this install.                                                      |
+| `[Posted:INSTALL_ERROR] Failed to report install: 401`     | Wrong `apiKey` or `appID`. Check the credentials in the dashboard.                                   |
+| `[Posted:INSTALL_ERROR] Failed to report install: 4xx/5xx` | The backend rejected the report. The SDK retries on the next launch.                                 |
+| `[Posted:INSTALL_ERROR] Error reporting install`           | No network, or the native plugin was called with blank credentials. The SDK retries on the next launch. |
+| `posted_sdk: current platform is not supported`            | Running on web or desktop. The call is a no-op there.                                                |
+| Nothing logged                                             | The install was already reported on an earlier launch. Uninstall and reinstall to report again.      |
 
-```dart
-class PostedIntent {
-  final PostedLink link;
-  final PostedIntentSource source;  // initial, runtime, or manual
-  final DateTime receivedAt;
-}
+## Example app
 
-enum PostedIntentSource { initial, runtime, manual }
-```
-
-</details>
-
-### `PostedResult`
-
-<details>
-<summary>PostedResult</summary>
-
-```dart
-class PostedResult {
-  final bool processed;
-  final PostedLink? link;
-}
-```
-
-</details>
-
-### `PostedLink`
-
-<details>
-<summary>PostedLink</summary>
-
-```dart
-class PostedLink {
-  final String url;
-  final String route;
-  final String pathname;
-  final Map<String, String> params;
-  final PostedLinkType type;  // deferred, verified, or scheme
-}
-```
-
-</details>
-
-### `PostedEventName`
-
-<details>
-<summary>PostedEventName</summary>
-
-```dart
-enum PostedEventName {
-  login, search, share, signUp, tutorialBegin, tutorialComplete,
-  reEngage, invite, openedFromPushNotification, addPaymentInfo,
-  addShippingInfo, addToCart, removeFromCart, refund, viewItem,
-  beginCheckout, purchase, adImpression,
-}
-```
-
-</details>
-
-## API Reference
-
-Full generated API reference (dartdoc, built from source doc comments): hosted copy not yet live <!-- TODO(POS-590): link once the generated reference is hosted -->. CI (`dart doc .`) regenerates and fails the build on any generation error, so it never drifts from source. Build it locally with `dart doc .` and open `doc/api/index.html`. The tables below are a quick-reference summary of the same public surface.
-
-### `PostedService`
-
-High-level integration helper (extends `ChangeNotifier`):
-
-- `Future<void> start(PostedConfig config)`
-- `bool get isStarted`
-- `bool get isInitialLinkProcessed`
-- `PostedIntent? get pendingIntent`
-- `void consumePendingIntent()`
-- `Future<PostedResult> processLink(String url, {bool emitIntent = true})`
-- `Future<void> logEvent(PostedEventName eventName, {Map<String, dynamic>? data})`
-- `Future<void> logRetention(String eventName)`
-- `Future<void> stop()`
-
-### `PostedSdk`
-
-Low-level bridge API:
-
-- `Future<PostedResult> resolveAppLaunch(PostedConfig config)` — preferred entry point; fire-once, result cached
-- `Future<void> configure(PostedConfig config)` — sets config without resolving; use when you need to call deprecated shims
-- `Future<PostedResult> resolveInitialLink()` *(deprecated — use `resolveAppLaunch(config)` instead; requires `configure()` to be called first or throws `StateError`)*
-- `Future<PostedResult> processLink(String url)` *(deprecated — use `resolveAppLaunch(config)` instead)*
-- `Stream<PostedResult> get linkStream` — canonical continuous-event payload; every emitted `PostedResult.link` (when non-null) carries the fully parsed `PostedLink` (`url`/`route`/`pathname`/`params`/`type`)
-- `Future<void> resetSession()` — re-arms fire-once for the next `resolveAppLaunch` call
-- `Future<void> logEvent(PostedEventName eventName, {Map<String, dynamic>? data})`
-- `Future<void> logRetention(String eventName)`
-
-### Continuous deep-link stream (cross-platform surface)
-
-The **continuous deep-link stream** delivers every link the app receives while it is running (warm links). It is a **separate feature from fire-once install attribution**: `resolveAppLaunch` resolves the single deferred/deep link responsible for the install exactly once (cached thereafter), whereas the continuous stream is unrelated to attribution and emits on every warm link for the life of the process. Use `resolveAppLaunch` for attribution; use the stream (or the native warm-link path below) for ongoing in-session navigation.
-
-The stream is an idiomatic convenience exposed **only on the JS/Dart wrappers**, which already sit on top of a framework-level URL event bus (React Native `Linking`, Flutter `EventChannel`). Native iOS/Android apps deliver warm links through platform lifecycle hooks instead — this divergence is **intentional, not a gap**.
-
-| Platform | Continuous stream API | Status | Warm-link path |
-|----------|----------------------|--------|----------------|
-| Flutter (`PostedSdk`) | `Stream<PostedResult> get linkStream` | ✅ present, non-deprecated (EventChannel-backed) | via `linkStream` |
-| React Native (`Posted`) | `addEventListener("url", listener) → PostedUrlSubscription` | ✅ present, non-deprecated (mirrors RN core `Linking`) | via `addEventListener` |
-| Android (`Posted`) | — none (intentional) — | ➖ not offered | `PostedDelegate.onNewIntent(intent)` → `resolveAppLaunch()` |
-| iOS (`Posted`) | — none (intentional) — | ➖ not offered | Scene/App URL handling (`scene(_:willConnectTo:)`, `openURL`, `continueUserActivity`) → `resolveAppLaunch()` |
-
-**Fire-once vs continuous** — `resolveAppLaunch` fires once per install and returns the attribution result; the continuous stream never participates in attribution and fires on every warm link.
-
-## Errors/Troubleshooting
-
-See the canonical [Troubleshooting & error-code reference](https://github.com/thepostedapp/posted-sdk-admin/blob/main/TROUBLESHOOTING.md) — 401s, no-match, deferred deep links not firing, iOS clipboard / Android install-referrer edge cases, and key rotation, each with cause → how to detect → fix.
-
-## Migration
-
-`posted_sdk` 3.0.0 reshapes the public API around a single **attribution-first** entry point.
-Previously, cold-start attribution required a `configure()` call followed by `resolveInitialLink()`
-(or the runtime-only `processLink(url)`); now a single `resolveAppLaunch(config)` call on `PostedSdk`
-configures the SDK and resolves the launch attribution in one step. `PostedService.start(config)`
-already gives you this and needs no changes.
-
-| Old (2.x)                    | New (3.0)                    | Notes                                     |
-| ----------------------------- | ----------------------------- | ------------------------------------------ |
-| `configure(config)` + `resolveInitialLink()` | `resolveAppLaunch(config)` | Single call; no separate `configure()` needed. See [§1](#1-resolveinitiallink--resolveapplaunchconfig). |
-| `processLink(String url)` *(on `PostedSdk`)* | `resolveAppLaunch(config)` | Deprecated for cold-start attribution only; `PostedService.processLink(url)` is unaffected. See [§2](#2-processlinkstring-url-is-deprecated). |
-
-### 1. `resolveInitialLink()` → `resolveAppLaunch(config)`
-
-```dart
-// Before (deprecated)
-await sdk.configure(config);
-final result = await sdk.resolveInitialLink();
-
-// After
-final result = await sdk.resolveAppLaunch(config);
-```
-
-`resolveAppLaunch` takes `config` directly — no separate `configure()` call is needed first.
-
-### 2. `processLink(String url)` is deprecated
-
-`PostedSdk.processLink(url)` is deprecated in 3.0.0; use `resolveAppLaunch(config)` for cold-start
-attribution instead. This does **not** affect `PostedService.processLink(url)`, which remains fully
-supported for handling an arbitrary runtime URL (for example a custom scheme link caught while the
-app is already running) — that is a distinct use case from cold-start attribution.
-
-Both `resolveInitialLink()` and `processLink()` are kept as deprecated shims for **one release
-cycle** and will be **removed in 4.0** (the next major release).
-
-### 3. No separate `launchContext` parameter on Flutter
-
-Unlike the iOS and Android SDKs, `resolveAppLaunch(config)` on Flutter has no separate
-`launchContext` parameter to pass. There is no Dart-side equivalent of native
-`AppDelegate`/`SceneDelegate` launch options — the native layer resolves the launch context
-internally, so `resolveAppLaunch(config)` is the complete call.
-
-### 4. Fire-once semantics
-
-`resolveAppLaunch` caches its result after the first successful call: the native layer persists the
-fire-once flag and the cached result, so the result **survives app updates** — every call after the
-first returns the same cached `PostedResult` for a given install. Only a **reinstall**, or an
-explicit call to `resetSession()`, re-arms it for a fresh resolution.
-
-## Versioning/compatibility
-
-- **SDK version**: `4.0.0` (aligned across iOS/Android/React Native/Flutter)
-- **Backend contract**: v1.1.0, served from `attr.postedapp.com`
-- **Dart**: `^3.11.1` · **Flutter**: `>=3.3.0` (see `environment` in [`pubspec.yaml`](./pubspec.yaml))
-- **Cross-platform compatibility matrix**: [COMPATIBILITY.md](https://github.com/thepostedapp/posted-sdk-admin/blob/main/COMPATIBILITY.md)
-
-## Example
-
-A complete integration example covering deferred links, Universal/App Links, and custom scheme links is in [`example/`](./example). See the [example setup guide](./example/README.md) for step-by-step instructions.
+See [example](example/README.md) for a minimal app that calls `Posted.reportInstall()` on launch.
 
 ## Support
 
-- Found a bug or have a question specific to this SDK? [Open an issue](https://github.com/thepostedapp/posted-sdk-flutter/issues) on this repo.
-
-### Other posted-sdk SDKs
-
-posted-sdk is also available for other app stacks:
-
-- Android SDK: [https://github.com/thepostedapp/posted-sdk-android](https://github.com/thepostedapp/posted-sdk-android)
-- iOS SDK: [https://github.com/thepostedapp/posted-sdk-ios](https://github.com/thepostedapp/posted-sdk-ios)
-- React Native SDK: [https://github.com/thepostedapp/posted-sdk-react-native](https://github.com/thepostedapp/posted-sdk-react-native)
+Found a bug or have a question? [Open an issue](https://github.com/thepostedapp/posted-sdk-flutter/issues).

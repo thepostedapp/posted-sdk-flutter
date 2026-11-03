@@ -1,15 +1,13 @@
-// CONTRACT: The native iOS SDK (PostedSDK) discovers this class by name via
-// NSClassFromString. The native SDK looks up PostedFlutterMarker
-// and PostedFlutterMarker during the transition window — confirm with the iOS SDK
-// team ([POS-11]) before merging. Do NOT rename this class or the sdkHeaderValue
-// property without updating the native SDK.
+// CONTRACT: the native iOS SDK (PostedSDK) discovers this class by name via NSClassFromString
+// and reads `sdkHeaderValue` as the X-SDK header, so installs are attributed to the Flutter
+// SDK. Do NOT rename this class or the property without updating the native SDK.
 
 import Foundation
 
-// Native iOS SDK looks up this marker class and reads the final X-SDK value directly.
-// We keep the version explicit here because static CocoaPods linking places plugin code
-// in the host app bundle, so bundle-based version lookup would read the app version.
+// The version is explicit because static CocoaPods linking places plugin code in the host app
+// bundle, so a bundle-based lookup would read the app version. Kept in sync with pubspec.yaml by
+// scripts/check_ios_marker_version.sh.
 @objc(PostedFlutterMarker)
 public final class PostedFlutterMarker: NSObject {
-    @objc public static let sdkHeaderValue = "flutter/4.0.0"
+    @objc public static let sdkHeaderValue = "flutter/1.0.0"
 }
