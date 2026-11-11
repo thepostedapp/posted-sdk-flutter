@@ -2,6 +2,19 @@
 
 All notable changes to `posted_sdk` are documented here.
 
+## 1.0.2
+
+### Added
+
+- The install report includes `installSource`: `store` for an App Store or
+  Google Play install, `development` for debug, TestFlight, ad hoc and emulator
+  builds. It's collected by the native SDKs; no Dart API changes.
+
+### Changed
+
+- Wraps `PostedSDK` 1.0.2 on iOS and `com.postedapp:posted-sdk` 4.0.2 on
+  Android.
+
 ## 1.0.1 — Initial public release
 
 Initial public release of `posted_sdk` for Flutter.

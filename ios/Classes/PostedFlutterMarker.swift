@@ -9,5 +9,5 @@ import Foundation
 // scripts/check_ios_marker_version.sh.
 @objc(PostedFlutterMarker)
 public final class PostedFlutterMarker: NSObject {
-    @objc public static let sdkHeaderValue = "flutter/1.0.1"
+    @objc public static let sdkHeaderValue = "flutter/1.0.2"
 }
