@@ -20,7 +20,7 @@ The SDK reports installs only. It does not report purchases, signups or other in
 
 - Flutter 3.24+ / Dart 3.5+
 - iOS 13.0+, Android 7.0+ (API 24)
-- The plugin wraps the native Posted SDKs: `PostedSDK` 1.0.1 on iOS (CocoaPods) and `com.postedapp:posted-sdk` 4.0.1 on Android (Maven Central). Both are pulled in automatically. On web and desktop the SDK does nothing.
+- The plugin wraps the native Posted SDKs: `PostedSDK` 1.0.2 on iOS (CocoaPods) and `com.postedapp:posted-sdk` 4.0.2 on Android (Maven Central). Both are pulled in automatically. On web and desktop the SDK does nothing.
 
 ## Get your app ID and API key
 

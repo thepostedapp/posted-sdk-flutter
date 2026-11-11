@@ -1,6 +1,6 @@
 name: posted_sdk
 description: "Reports app installs to Posted for ad attribution. One call, reportInstall, sent once per install, through the native Posted SDKs."
-version: 1.0.1
+version: 1.0.2
 homepage: https://github.com/thepostedapp/posted-sdk-flutter
 repository: https://github.com/thepostedapp/posted-sdk-flutter
 issue_tracker: https://github.com/thepostedapp/posted-sdk-flutter/issues

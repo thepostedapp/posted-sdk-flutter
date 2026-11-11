@@ -1,5 +1,5 @@
 group = "com.postedapp.posted"
-version = "1.0.1"
+version = "1.0.2"
 
 buildscript {
     val kotlinVersion = "2.2.20"
@@ -79,7 +79,7 @@ android {
 }
 
 dependencies {
-    implementation("com.postedapp:posted-sdk:4.0.1")
+    implementation("com.postedapp:posted-sdk:4.0.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.mockito:mockito-core:5.0.0")
