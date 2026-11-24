@@ -11,6 +11,7 @@ The SDK reports installs only. It does not report purchases, signups or other in
 - [1. Install](#1-install)
 - [2. Report the install](#2-report-the-install)
 - [3. Verify the integration](#3-verify-the-integration)
+- [RevenueCat](#revenuecat)
 - [Configuration](#configuration)
 - [Privacy](#privacy)
 - [Troubleshooting](#troubleshooting)
@@ -20,7 +21,7 @@ The SDK reports installs only. It does not report purchases, signups or other in
 
 - Flutter 3.24+ / Dart 3.5+
 - iOS 13.0+, Android 7.0+ (API 24)
-- The plugin wraps the native Posted SDKs: `PostedSDK` 1.0.2 on iOS (CocoaPods) and `com.postedapp:posted-sdk` 4.0.2 on Android (Maven Central). Both are pulled in automatically. On web and desktop the SDK does nothing.
+- The plugin wraps the native Posted SDKs: `PostedSDK` 1.1.0 on iOS (CocoaPods) and `com.postedapp:posted-sdk` 4.1.0 on Android (Maven Central). Both are pulled in automatically. On web and desktop the SDK does nothing.
 
 ## Get your app ID and API key
 
@@ -66,6 +67,18 @@ You don't need to `await` it. It never throws, and it doesn't block app startup.
 2. Run the app with a **fresh install**. Uninstalling clears the SDK's storage, so a reinstall reports again.
 3. Watch the native logs. On Android, filter Logcat by the `PostedApiClient` tag; on iOS, filter Console by the `com.postedapp.posted` subsystem. On success you'll see `Install reported`. On failure, a line starting with `[Posted:INSTALL_ERROR]` (see [Troubleshooting](#troubleshooting)).
 
+## RevenueCat
+
+If your app uses RevenueCat, pass its app user ID to Posted after `Purchases.configure(...)`. Posted uses it to attribute purchases to your campaigns.
+
+```dart
+await Purchases.configure(PurchasesConfiguration('<REVENUECAT_API_KEY>'));
+
+Posted.setRevenueCatUserId(config, await Purchases.appUserID);
+```
+
+Call it on every launch, with the same config as `Posted.reportInstall()`. The ID is sent once per install, and it never throws.
+
 ## Configuration
 
 ```dart
@@ -77,7 +90,7 @@ Posted.reportInstall(PostedConfig config) → Future<void>
 | `apiKey` | `String` | Yes      | API key from the dashboard, **Posted SDK → API keys**. |
 | `appID`  | `String` | Yes      | App ID from the dashboard, **Posted SDK → Apps**.      |
 
-The native SDKs store two keys, both prefixed with `Posted_`: the "install reported" flag and a device ID. If the app is uninstalled and reinstalled, the install is reported again.
+The native SDKs store three keys, all prefixed with `Posted_`: the "install reported" flag, the "RevenueCat user reported" flag and a device ID. If the app is uninstalled and reinstalled, the install is reported again.
 
 
 ## Privacy

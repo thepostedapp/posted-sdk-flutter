@@ -32,4 +32,20 @@ class Posted {
       debugPrint('[Posted:INSTALL_ERROR] Error reporting install: $error');
     }
   }
+
+  /// Links the RevenueCat app user id to this install, so purchases can be
+  /// attributed.
+  ///
+  /// Call it after `Purchases.configure(...)`. The id is sent once per
+  /// install, and retried on later calls until the backend accepts it. Never
+  /// throws. On platforms other than Android and iOS it does nothing.
+  static Future<void> setRevenueCatUserId(
+      PostedConfig config, String id) async {
+    try {
+      await PostedSdkPlatform.instance.setRevenueCatUserId(config, id);
+    } catch (error) {
+      debugPrint(
+          '[Posted:REVENUECAT_ERROR] Error reporting RevenueCat user: $error');
+    }
+  }
 }

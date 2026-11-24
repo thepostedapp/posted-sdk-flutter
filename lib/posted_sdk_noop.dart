@@ -11,4 +11,10 @@ class NoopPostedSdk extends PostedSdkPlatform {
     debugPrint(
         'posted_sdk: current platform is not supported, install not reported');
   }
+
+  @override
+  Future<void> setRevenueCatUserId(PostedConfig config, String id) async {
+    debugPrint(
+        'posted_sdk: current platform is not supported, RevenueCat user not reported');
+  }
 }

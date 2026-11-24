@@ -14,4 +14,13 @@ class MethodChannelPostedSdk extends PostedSdkPlatform {
       'appID': config.appID,
     });
   }
+
+  @override
+  Future<void> setRevenueCatUserId(PostedConfig config, String id) async {
+    await methodChannel.invokeMethod<void>('setRevenueCatUserId', {
+      'apiKey': config.apiKey,
+      'appID': config.appID,
+      'id': id,
+    });
+  }
 }

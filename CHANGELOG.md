@@ -2,6 +2,20 @@
 
 All notable changes to `posted_sdk` are documented here.
 
+## 1.1.0
+
+### Added
+
+- **`Posted.setRevenueCatUserId(config, id)`** — links the RevenueCat app user
+  ID to the install, so purchases can be attributed to the campaign. Call it
+  after `Purchases.configure(...)`. Sent once per install, retried on later
+  calls until the backend accepts it, never throws.
+
+### Changed
+
+- Wraps `PostedSDK` 1.1.0 on iOS and `com.postedapp:posted-sdk` 4.1.0 on
+  Android.
+
 ## 1.0.2
 
 ### Added
