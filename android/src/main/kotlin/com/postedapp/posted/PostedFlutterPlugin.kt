@@ -29,7 +29,7 @@ class PostedFlutterPlugin : FlutterPlugin, MethodCallHandler {
 
     override fun onMethodCall(call: MethodCall, result: Result) {
         when (call.method) {
-            "reportInstall" -> {
+            "reportInstall", "setRevenueCatUserId" -> {
                 val args = call.arguments as? Map<*, *>
                 val apiKey = args?.get("apiKey") as? String
                 val appID = args?.get("appID") as? String
@@ -45,7 +45,11 @@ class PostedFlutterPlugin : FlutterPlugin, MethodCallHandler {
                 val config = PostedConfig(apiKey = apiKey, appId = appID)
                 scope.launch {
                     // Never throws; the native SDK logs failures and retries on the next launch.
-                    Posted.reportInstallAndAwait(context, config)
+                    if (call.method == "reportInstall") {
+                        Posted.reportInstallAndAwait(context, config)
+                    } else {
+                        Posted.setRevenueCatUserIdAndAwait(context, config, args?.get("id") as? String ?: "")
+                    }
                     result.success(null)
                 }
             }

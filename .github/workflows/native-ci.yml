@@ -20,8 +20,9 @@ jobs:
       # example/android/gradle/wrapper/gradle-wrapper.properties instead of ./gradlew.
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: "8.14" }
+      # Newer Flutter needs Gradle 9.3.1+; keep in step with the example's Gradle 8.14.
       - uses: subosito/flutter-action@v2
-        with: { channel: stable }
+        with: { channel: stable, flutter-version: 3.38.x }
       - run: flutter pub get
         working-directory: example
       - name: Run PostedFlutterMarker unit test (real BuildConfig-derived resolver)
