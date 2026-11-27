@@ -16,8 +16,8 @@ class MethodChannelPostedSdk extends PostedSdkPlatform {
   }
 
   @override
-  Future<void> setRevenueCatUserId(PostedConfig config, String id) async {
-    await methodChannel.invokeMethod<void>('setRevenueCatUserId', {
+  Future<void> setPurchasesUserId(PostedConfig config, String id) async {
+    await methodChannel.invokeMethod<void>('setPurchasesUserId', {
       'apiKey': config.apiKey,
       'appID': config.appID,
       'id': id,

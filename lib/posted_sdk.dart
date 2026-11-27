@@ -33,19 +33,19 @@ class Posted {
     }
   }
 
-  /// Links the RevenueCat app user id to this install, so purchases can be
-  /// attributed.
+  /// Links the RevenueCat or Superwall user id to this install, so purchases
+  /// can be attributed.
   ///
-  /// Call it after `Purchases.configure(...)`. The id is sent once per
+  /// Call it after the purchases SDK is configured. The id is sent once per
   /// install, and retried on later calls until the backend accepts it. Never
   /// throws. On platforms other than Android and iOS it does nothing.
-  static Future<void> setRevenueCatUserId(
+  static Future<void> setPurchasesUserId(
       PostedConfig config, String id) async {
     try {
-      await PostedSdkPlatform.instance.setRevenueCatUserId(config, id);
+      await PostedSdkPlatform.instance.setPurchasesUserId(config, id);
     } catch (error) {
       debugPrint(
-          '[Posted:REVENUECAT_ERROR] Error reporting RevenueCat user: $error');
+          '[Posted:PURCHASES_ERROR] Error reporting purchases user: $error');
     }
   }
 }

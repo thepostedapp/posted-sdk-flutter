@@ -10,7 +10,7 @@ const _config = PostedConfig(apiKey: 'api-key', appID: 'app-id');
 class _RecordingPlatform extends PostedSdkPlatform
     with MockPlatformInterfaceMixin {
   final configs = <PostedConfig>[];
-  final revenueCatUserIds = <String>[];
+  final purchasesUserIds = <String>[];
   Object? throwOnReport;
 
   @override
@@ -20,9 +20,9 @@ class _RecordingPlatform extends PostedSdkPlatform
   }
 
   @override
-  Future<void> setRevenueCatUserId(PostedConfig config, String id) async {
+  Future<void> setPurchasesUserId(PostedConfig config, String id) async {
     configs.add(config);
-    revenueCatUserIds.add(id);
+    purchasesUserIds.add(id);
     if (throwOnReport != null) throw throwOnReport!;
   }
 }
@@ -58,24 +58,24 @@ void main() {
     await expectLater(Posted.reportInstall(_config), completes);
   });
 
-  test('setRevenueCatUserId forwards the config and id to the platform',
+  test('setPurchasesUserId forwards the config and id to the platform',
       () async {
     final platform = _RecordingPlatform();
     PostedSdkPlatform.instance = platform;
 
-    await Posted.setRevenueCatUserId(_config, 'rc-user-1');
+    await Posted.setPurchasesUserId(_config, 'rc-user-1');
 
     expect(platform.configs.single.apiKey, 'api-key');
     expect(platform.configs.single.appID, 'app-id');
-    expect(platform.revenueCatUserIds.single, 'rc-user-1');
+    expect(platform.purchasesUserIds.single, 'rc-user-1');
   });
 
-  test('setRevenueCatUserId never throws', () async {
+  test('setPurchasesUserId never throws', () async {
     final platform = _RecordingPlatform()..throwOnReport = StateError('boom');
     PostedSdkPlatform.instance = platform;
 
     await expectLater(
-        Posted.setRevenueCatUserId(_config, 'rc-user-1'), completes);
+        Posted.setPurchasesUserId(_config, 'rc-user-1'), completes);
   });
 
   test('no-op platform completes without a native call', () async {
@@ -83,6 +83,6 @@ void main() {
 
     await expectLater(Posted.reportInstall(_config), completes);
     await expectLater(
-        Posted.setRevenueCatUserId(_config, 'rc-user-1'), completes);
+        Posted.setPurchasesUserId(_config, 'rc-user-1'), completes);
   });
 }
