@@ -29,7 +29,7 @@ class PostedFlutterPlugin : FlutterPlugin, MethodCallHandler {
 
     override fun onMethodCall(call: MethodCall, result: Result) {
         when (call.method) {
-            "reportInstall", "setRevenueCatUserId" -> {
+            "reportInstall", "setPurchasesUserId" -> {
                 val args = call.arguments as? Map<*, *>
                 val apiKey = args?.get("apiKey") as? String
                 val appID = args?.get("appID") as? String
@@ -48,7 +48,7 @@ class PostedFlutterPlugin : FlutterPlugin, MethodCallHandler {
                     if (call.method == "reportInstall") {
                         Posted.reportInstallAndAwait(context, config)
                     } else {
-                        Posted.setRevenueCatUserIdAndAwait(context, config, args?.get("id") as? String ?: "")
+                        Posted.setPurchasesUserIdAndAwait(context, config, args?.get("id") as? String ?: "")
                     }
                     result.success(null)
                 }

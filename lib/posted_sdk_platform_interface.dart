@@ -27,9 +27,9 @@ abstract class PostedSdkPlatform extends PlatformInterface {
     throw UnimplementedError('reportInstall() has not been implemented.');
   }
 
-  /// Links the RevenueCat app user id to the install through the native
+  /// Links the purchases user id to the install through the native
   /// Posted SDK.
-  Future<void> setRevenueCatUserId(PostedConfig config, String id) {
-    throw UnimplementedError('setRevenueCatUserId() has not been implemented.');
+  Future<void> setPurchasesUserId(PostedConfig config, String id) {
+    throw UnimplementedError('setPurchasesUserId() has not been implemented.');
   }
 }

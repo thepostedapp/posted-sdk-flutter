@@ -2,6 +2,14 @@
 
 All notable changes to `posted_sdk` are documented here.
 
+## 1.1.1
+
+### Changed
+
+- **`setRevenueCatUserId` is now `Posted.setPurchasesUserId(config, id)`.** Pass
+  the RevenueCat or Superwall user ID. The old name is removed.
+- Wraps `PostedSDK` 1.1.1 on iOS and `com.postedapp:posted-sdk` 4.1.1 on Android.
+
 ## 1.1.0
 
 ### Added

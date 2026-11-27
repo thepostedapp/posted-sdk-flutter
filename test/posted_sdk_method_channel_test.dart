@@ -36,15 +36,15 @@ void main() {
     expect(calls.single.arguments, {'apiKey': 'api-key', 'appID': 'app-id'});
   });
 
-  test('setRevenueCatUserId invokes the native method with the config and id',
+  test('setPurchasesUserId invokes the native method with the config and id',
       () async {
-    await platform.setRevenueCatUserId(
+    await platform.setPurchasesUserId(
       const PostedConfig(apiKey: 'api-key', appID: 'app-id'),
       'rc-user-1',
     );
 
     expect(calls, hasLength(1));
-    expect(calls.single.method, 'setRevenueCatUserId');
+    expect(calls.single.method, 'setPurchasesUserId');
     expect(calls.single.arguments,
         {'apiKey': 'api-key', 'appID': 'app-id', 'id': 'rc-user-1'});
   });
