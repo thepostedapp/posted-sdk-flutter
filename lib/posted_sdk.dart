@@ -39,8 +39,7 @@ class Posted {
   /// Call it after the purchases SDK is configured. The id is sent once per
   /// install, and retried on later calls until the backend accepts it. Never
   /// throws. On platforms other than Android and iOS it does nothing.
-  static Future<void> setPurchasesUserId(
-      PostedConfig config, String id) async {
+  static Future<void> setPurchasesUserId(PostedConfig config, String id) async {
     try {
       await PostedSdkPlatform.instance.setPurchasesUserId(config, id);
     } catch (error) {
